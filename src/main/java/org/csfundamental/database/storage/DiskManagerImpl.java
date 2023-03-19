@@ -6,12 +6,12 @@ public class DiskManagerImpl implements IDiskManager{
     private Map<Integer, Partition> partitionMap;
 
     /**
-     * PAGE_SIZE / 2 byte
+     * Number of header pages included in one master page: PAGE_SIZE / 2 byte
      * */
     public static final int HEADER_PAGES_PER_MASTER = PAGE_SIZE / 2;
 
     /**
-     * PAGE_SIZE / 1 bit
+     * Number of data pages included in one header page: PAGE_SIZE / 1 bit
      * */
     public static final int DATA_PAGES_PER_HEADER = PAGE_SIZE * 8;
 

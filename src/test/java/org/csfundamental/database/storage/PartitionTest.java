@@ -1,14 +1,56 @@
 package org.csfundamental.database.storage;
 
-import org.junit.Test;
+import org.junit.*;
 
-import static org.junit.Assert.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.URL;
+
+import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_HEADER;
 
 public class PartitionTest {
+    private static final String PARTITION_PATH = "partitions/EmptyPartition";
+
+    private String emptyFile;
+
+    @Before
+    public void setup() throws IOException {
+        emptyFile = getClass().getClassLoader().getResource(PARTITION_PATH).getFile();
+        reset_EmptyPartitionFile();
+    }
+
+    @After
+    public void reset_EmptyPartitionFile() throws IOException {
+        File f = new File(emptyFile);
+        if (f.exists() && f.length() > 0){
+            FileWriter fw = new FileWriter(f);
+            fw.write("");
+            fw.flush();
+            fw.close();
+        }
+    }
 
     @Test
-    public void testCreateNewPartitionObject(){
-        Partition part = new Partition(0);
-        int i = 0;
+    public void alloc_DataPages_Under_First2HeaderPage() throws Exception {
+        Partition part1 = new Partition(0);
+        part1.open(emptyFile);
+        for (int i = 0; i < 2 * DATA_PAGES_PER_HEADER; i++){
+            int pageNum = part1.allocPage();
+            Assert.assertEquals(pageNum, i);
+            Partition part2 = new Partition(0);
+            part2.open(emptyFile);
+            comparePartition(part1, part2);
+        }
+    }
+
+    private void comparePartition(Partition part1, Partition part2){
+        Assert.assertArrayEquals(part1.getMasterPage(), part1.getMasterPage());
+        byte[][] headerPages1 = part1.getHeaderPages();
+        byte[][] headerPages2 = part2.getHeaderPages();
+        Assert.assertEquals(headerPages1.length, headerPages2.length);
+        for (int i = 0; i < headerPages1.length; i++){
+            Assert.assertArrayEquals(headerPages1[i], headerPages2[i]);
+        }
     }
 }
