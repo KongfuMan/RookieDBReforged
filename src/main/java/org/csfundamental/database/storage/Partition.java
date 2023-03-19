@@ -12,46 +12,44 @@ import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_
 import static org.csfundamental.database.storage.IDiskManager.PAGE_SIZE;
 
 public class Partition implements Closeable {
-    private int partNum;
+    private final int partNum;
 
     private RandomAccessFile file;
 
     private FileChannel fileChannel;
 
     // type of each entry is unsigned short. Use int instead since java does not support unsigned short
-    private int[] masterPage;
+    private final int[] masterPage;
 
-    private byte[][] headerPages; // [HEADER_PAGES_PER_MASTER][PAGE_SIZE] = [HEADER_PAGES_PER_MASTER][DATA_PAGES_PER_HEADER bits]
+    private final byte[][] headerPages; // [HEADER_PAGES_PER_MASTER][PAGE_SIZE] = [HEADER_PAGES_PER_MASTER][DATA_PAGES_PER_HEADER bits]
 
     public Partition(int partNum){
         this.partNum = partNum;
         this.masterPage = new int[HEADER_PAGES_PER_MASTER];
-        Arrays.fill(masterPage, (short)0);
         this.headerPages = new byte[HEADER_PAGES_PER_MASTER][];
     }
 
     /**
-     * Open the file and load master/header pages into memory
+     * Open the OS file backing this partition and load master/header pages into memory
      * */
     void open(String fileName) throws IOException {
         file = new RandomAccessFile(fileName, "rw");
         fileChannel = file.getChannel();
-        long length = fileChannel.size();
-        if (length == 0){
-            // new file, write empty master page
+        if (fileChannel.size() == 0){
+            // new file, write the empty master page
             writeMasterPage();
         }else {
             // first page(pageNum=0) is always master page
-            ByteBuffer masterBuf = ByteBuffer.allocate(PAGE_SIZE);
-            fileChannel.read(masterBuf, Partition.masterPageOffset());
-            masterBuf.position(0);
+            ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
+            fileChannel.read(masterBuffer, Partition.masterPageOffset());
+            masterBuffer.position(0);
             for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
-                int allocNum = Short.toUnsignedInt(masterBuf.getShort());
+                int allocNum = Short.toUnsignedInt(masterBuffer.getShort());
                 if (allocNum != 0){
                     this.masterPage[headerIdx] = allocNum;
-                    ByteBuffer headerBuf = ByteBuffer.allocate(PAGE_SIZE);
-                    fileChannel.read(headerBuf, Partition.headerPageByteOffset(headerIdx));
-                    headerPages[headerIdx] = headerBuf.array();
+                    ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
+                    fileChannel.read(headerBuffer, Partition.headerPageByteOffset(headerIdx));
+                    headerPages[headerIdx] = headerBuffer.array();
                 }
             }
         }
@@ -67,11 +65,11 @@ public class Partition implements Closeable {
     }
 
     private void writeMasterPage() throws IOException {
-        ByteBuffer masterBuf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
         for (int i = 0; i < masterPage.length; i++){
-            masterBuf.putShort((short)masterPage[i]);
+            masterBuffer.putShort((short)masterPage[i]);
         }
-        writePage(masterPageOffset(), masterBuf.array());
+        writePage(masterPageOffset(), masterBuffer.array());
     }
 
     private void writeHeaderPage(int headerIndex) throws IOException {
@@ -80,9 +78,9 @@ public class Partition implements Closeable {
     }
 
     /**
-     * flush data of page with pageNum onto disk
-     * @param pageNum: the logical page number within the page
-     * @param buf: the byte array to be flushed to
+     * write the data page onto disk
+     * @param pageNum: the logical page number in the scope of the partition
+     * @param buf: the byte array in the page to be written
      * */
     private void writeDataPage(int pageNum, byte[] buf) throws IOException {
         long byteOffset = dataPageByteOffset(pageNum);
@@ -95,13 +93,12 @@ public class Partition implements Closeable {
     }
 
     /**
-     * Allocate a data page within this partition
-     *
-     * @return logical page number
+     * Allocate a data page within this partition following the steps below:
+     *  step1. iterate through master page to find first header page with free data pages
+     *  step2. iterate through each bit of header of step1 to find first free data page
+     * @return logical page number of allocated data page.
      * */
     int allocPage() throws Exception {
-        //step1. loop through master to find first header with free data page
-        //step2. loop through header of step1 to find first free data page
         int headerIdx = -1;
         for (int i = 0; i < masterPage.length; i++){
             if (masterPage[i] < DATA_PAGES_PER_HEADER){
@@ -120,7 +117,7 @@ public class Partition implements Closeable {
             dataIdx = 0;
         }else{
             for (int i = 0; i < DATA_PAGES_PER_HEADER; i++){
-                // Search for the first 0 bit. header.length = DATA_PAGES_PER_HEADER bits = PAGE_SIZE.
+                // Search for the first 0 bit in DATA_PAGES_PER_HEADER bits of the header
                 if (Bits.getBit(header, i) == Bits.Bit.ZERO){
                     dataIdx = i;
                     break;
@@ -157,21 +154,34 @@ public class Partition implements Closeable {
      * @param pageNum: logical page number within this partition
      * */
     void freePage(int pageNum) throws Exception {
-        int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
-        int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
-        byte[] header = headerPages[headerIdx];
-        if (Bits.getBit(header, dataIdx) == Bits.Bit.ZERO){
+        if (isFreePage(pageNum)){
             throw new Exception("Cannot deallocate a free page");
         }
-        //TODO: continue deallocate page
+        int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
+        masterPage[headerIdx]--;
+        byte[] header = headerPages[headerIdx];
+        int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
+        Bits.setBit(header, dataIdx, Bits.Bit.ZERO);
+        writeMasterPage();
+        writeHeaderPage(headerIdx);
     }
 
-    void readPage(int pageNum, byte[] buf){
+    void readPage(int pageNum, byte[] buf) throws Exception {
+        if (isFreePage(pageNum)){
+            throw new Exception("Cannot read a free page");
+        }
 
+        fileChannel.read(ByteBuffer.wrap(buf), dataPageByteOffset(pageNum));
     }
 
     boolean isFreePage(int pageNum){
-        return false;
+        int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
+        int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
+        byte[] header = headerPages[headerIdx];
+        if (header == null){
+            return true;
+        }
+        return Bits.getBit(header, dataIdx) == Bits.Bit.ZERO;
     }
 
     void freeDataPages(){
