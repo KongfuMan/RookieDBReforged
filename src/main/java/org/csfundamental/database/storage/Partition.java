@@ -12,6 +12,7 @@ import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_
 import static org.csfundamental.database.storage.IDiskManager.PAGE_SIZE;
 
 public class Partition implements Closeable {
+    public static final int DATA_PAGES_PER_PARTITION = HEADER_PAGES_PER_MASTER * DATA_PAGES_PER_HEADER;
     private final int partNum;
 
     private RandomAccessFile file;
@@ -55,6 +56,12 @@ public class Partition implements Closeable {
         }
     }
 
+    private void checkPageNum(int pageNum) throws Exception {
+        if (pageNum < 0 || pageNum >= DATA_PAGES_PER_PARTITION){
+            final String PAGE_NUM_OOB_ERR = "Page number(%d) is out of the value range:[0, %d]";
+            throw new Exception(String.format(PAGE_NUM_OOB_ERR, pageNum, DATA_PAGES_PER_PARTITION -1));
+        }
+    }
 
     @Override
     public void close() throws IOException {
@@ -142,10 +149,12 @@ public class Partition implements Closeable {
         }
 
         // data page@<headerIdx, dataIdx> is ready to be allocated at this point
-        masterPage[headerIdx]++;
         Bits.setBit(header, dataIdx, Bits.Bit.ONE);
+        masterPage[headerIdx]++;
         writeMasterPage();
         writeHeaderPage(headerIdx);
+        //TODO: consider crash recovery.
+
         return headerIdx * DATA_PAGES_PER_HEADER + dataIdx;
     }
 
@@ -158,15 +167,16 @@ public class Partition implements Closeable {
             throw new Exception("Cannot deallocate a free page");
         }
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
-        masterPage[headerIdx]--;
-        byte[] header = headerPages[headerIdx];
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
+        byte[] header = headerPages[headerIdx];
         Bits.setBit(header, dataIdx, Bits.Bit.ZERO);
+        masterPage[headerIdx]--;
         writeMasterPage();
         writeHeaderPage(headerIdx);
     }
 
     void readPage(int pageNum, byte[] buf) throws Exception {
+        checkPageNum(pageNum);
         if (isFreePage(pageNum)){
             throw new Exception("Cannot read a free page");
         }
@@ -174,18 +184,19 @@ public class Partition implements Closeable {
         fileChannel.read(ByteBuffer.wrap(buf), dataPageByteOffset(pageNum));
     }
 
-    boolean isFreePage(int pageNum){
+    boolean isFreePage(int pageNum) throws Exception {
+        checkPageNum(pageNum);
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
         byte[] header = headerPages[headerIdx];
-        if (header == null){
+        if (header == null || masterPage[headerIdx] == 0){
             return true;
         }
         return Bits.getBit(header, dataIdx) == Bits.Bit.ZERO;
     }
 
     void freeDataPages(){
-
+        //TODO
     }
 
     private static long masterPageOffset(){

@@ -44,6 +44,37 @@ public class PartitionTest {
         }
     }
 
+    @Test
+    public void dealloc_DataPages() throws Exception {
+        Partition part1 = new Partition(0);
+        part1.open(emptyFile);
+        int allocCount = 10;
+        for (int i = 0; i < allocCount; i++){
+            int pageNum = part1.allocPage();
+            Assert.assertEquals(pageNum, i);
+            Partition part2 = new Partition(0);
+            part2.open(emptyFile);
+            comparePartition(part1, part2);
+        }
+
+        for (int i = 0; i < allocCount - 1; i++){
+            part1.freePage(i);
+            Partition part2 = new Partition(0);
+            part2.open(emptyFile);
+            comparePartition(part1, part2);
+        }
+
+        part1.freePage(allocCount - 1);
+        Partition part2 = new Partition(0);
+        part2.open(emptyFile);
+        int[] master = part2.getMasterPage();
+        Assert.assertArrayEquals(master, new int[master.length]);
+        byte[][] headers = part2.getHeaderPages();
+        for (int i = 0; i < headers.length; i++){
+            Assert.assertNull(headers[i]);
+        }
+    }
+
     private void comparePartition(Partition part1, Partition part2){
         Assert.assertArrayEquals(part1.getMasterPage(), part1.getMasterPage());
         byte[][] headerPages1 = part1.getHeaderPages();
