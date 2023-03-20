@@ -150,7 +150,7 @@ public class Partition implements Closeable {
 
         // data page@<headerIdx, dataIdx> is ready to be allocated at this point
         Bits.setBit(header, dataIdx, Bits.Bit.ONE);
-        masterPage[headerIdx]++;
+        masterPage[headerIdx] = Bits.countBits(header);
         writeMasterPage();
         writeHeaderPage(headerIdx);
         //TODO: consider crash recovery.
@@ -168,9 +168,13 @@ public class Partition implements Closeable {
         }
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
+        freePage(headerIdx, dataIdx);
+    }
+
+    private void freePage(int headerIdx, int dataIdx) throws Exception {
         byte[] header = headerPages[headerIdx];
         Bits.setBit(header, dataIdx, Bits.Bit.ZERO);
-        masterPage[headerIdx]--;
+        masterPage[headerIdx] = Bits.countBits(header);
         writeMasterPage();
         writeHeaderPage(headerIdx);
     }
@@ -195,8 +199,21 @@ public class Partition implements Closeable {
         return Bits.getBit(header, dataIdx) == Bits.Bit.ZERO;
     }
 
-    void freeDataPages(){
-        //TODO
+    void freeDataPages() throws Exception {
+        for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
+            if (masterPage[headerIdx] == 0){
+                continue;
+            }
+            byte[] header = headerPages[headerIdx];
+            for (int dataIdx = 0; dataIdx < DATA_PAGES_PER_PARTITION; dataIdx++){
+                if (Bits.getBit(header, dataIdx) == Bits.Bit.ONE){
+                    this.freePage(headerIdx, dataIdx);
+                }
+                if (Bits.countBits(header) == 0){
+                    break;
+                }
+            }
+        }
     }
 
     private static long masterPageOffset(){
@@ -223,5 +240,9 @@ public class Partition implements Closeable {
 
     byte[][] getHeaderPages(){
         return headerPages;
+    }
+
+    long getFileSize() throws IOException {
+        return fileChannel.size();
     }
 }
