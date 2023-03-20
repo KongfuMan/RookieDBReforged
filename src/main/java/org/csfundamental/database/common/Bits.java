@@ -80,7 +80,7 @@ public class Bits {
      *   - countBits(0b11111101) == 7
      */
     public static int countBits(byte b) {
-        return Integer.bitCount(b);
+        return Integer.bitCount(Byte.toUnsignedInt(b));
     }
 
     /**
