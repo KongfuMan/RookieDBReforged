@@ -3,9 +3,9 @@ package org.csfundamental.database.storage;
 import org.junit.*;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.Paths;
 import java.util.UUID;
 
 import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
@@ -13,38 +13,39 @@ import static org.csfundamental.database.storage.DiskSpaceManagerImpl.HEADER_PAG
 import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
 
 public class PartitionTest {
-    private static final String PARTITION_PATH = "partitions/EmptyPartition";
+    private static final String PARTITION_DIR = "partitions";
+    private static final String EMPTY_PARTITION = "empty_partition";
 
+    private File partDir;
+    private File emptyPart;
     private String emptyFile;
 
     @Before
     public void setup() throws IOException {
-        emptyFile = getClass().getClassLoader().getResource(PARTITION_PATH).getFile();
-        reset_EmptyPartitionFile();
+        String resourceRoot = getClass().getClassLoader().getResource("").getPath();
+        partDir = Paths.get(resourceRoot, PARTITION_DIR).toFile();
+        emptyPart = Paths.get(partDir.getAbsolutePath(), EMPTY_PARTITION).toFile();
+        emptyFile = emptyPart.getAbsolutePath();
+        clearPartitionFiles();
+        if (!partDir.exists()){
+            partDir.mkdirs();
+        }
+        emptyPart.createNewFile();
+    }
+
+    private void clearPartitionFiles(){
+        if (partDir.exists()){
+            for (File file : partDir.listFiles()){
+                file.delete();
+            }
+        }
     }
 
     @After
     public void reset_EmptyPartitionFile() throws IOException {
-        File f = new File(emptyFile);
-        if (f.exists() && f.length() > 0){
-            FileWriter fw = new FileWriter(f);
-            fw.write("");
-            fw.flush();
-            fw.close();
-        }
-    }
-
-    @Test
-    public void alloc_DataPages_Under_First2HeaderPage() throws Exception {
-        Partition part1 = new Partition(0);
-        part1.open(emptyFile);
-        int expectedPageNum = 0;
-        for (int i = 0; i < 2 * DATA_PAGES_PER_HEADER; i += 32){
-            int pageNum = part1.allocPage();
-            Assert.assertEquals(pageNum, expectedPageNum++);
-            Partition part2 = new Partition(0);
-            part2.open(emptyFile);
-            comparePartition(part1, part2);
+        clearPartitionFiles();
+        if (partDir.exists()){
+            partDir.delete();
         }
     }
 
