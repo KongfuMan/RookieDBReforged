@@ -6,38 +6,44 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
+import java.util.concurrent.locks.ReentrantLock;
 
-import static org.csfundamental.database.storage.DiskManagerImpl.HEADER_PAGES_PER_MASTER;
-import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_HEADER;
-import static org.csfundamental.database.storage.IDiskManager.PAGE_SIZE;
+import static org.csfundamental.database.storage.DiskSpaceManagerImpl.HEADER_PAGES_PER_MASTER;
+import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
+import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
 
+/**
+ * One partition is backed by on OS file.
+ * The methods are not thread-safe. It is the caller's responsibility to use partLock to protect critical section.
+ * */
 public class Partition implements Closeable {
     public static final int DATA_PAGES_PER_PARTITION = HEADER_PAGES_PER_MASTER * DATA_PAGES_PER_HEADER;
-    private final int partNum;
-
+    ReentrantLock partLock;
+    final int partNum;
     private RandomAccessFile file;
-
     private FileChannel fileChannel;
-
     // type of each entry is unsigned short. Use int instead since java does not support unsigned short
     private final int[] masterPage;
-
     private final byte[][] headerPages; // [HEADER_PAGES_PER_MASTER][PAGE_SIZE] = [HEADER_PAGES_PER_MASTER][DATA_PAGES_PER_HEADER bits]
 
     public Partition(int partNum){
         this.partNum = partNum;
         this.masterPage = new int[HEADER_PAGES_PER_MASTER];
+        Arrays.fill(masterPage, 0); // explicitly initialize each element to be 0
         this.headerPages = new byte[HEADER_PAGES_PER_MASTER][];
+        this.partLock = new ReentrantLock();
     }
 
     /**
      * Open the OS file backing this partition and load master/header pages into memory
-     * */
+     *
+     * @throws IOException if fail to open the file
+     **/
     void open(String fileName) throws IOException {
         file = new RandomAccessFile(fileName, "rw");
         fileChannel = file.getChannel();
         if (fileChannel.size() == 0){
-            // new file, write the empty master page
+            // new file, write initial master page
             writeMasterPage();
         }else {
             // first page(pageNum=0) is always master page
@@ -45,7 +51,7 @@ public class Partition implements Closeable {
             fileChannel.read(masterBuffer, Partition.masterPageOffset());
             masterBuffer.position(0);
             for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
-                int allocNum = Short.toUnsignedInt(masterBuffer.getShort());
+                int allocNum = Short.toUnsignedInt(masterBuffer.getShort()); //make sure short is unsigned here, otherwise will overflow
                 if (allocNum != 0){
                     this.masterPage[headerIdx] = allocNum;
                     ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
@@ -56,19 +62,27 @@ public class Partition implements Closeable {
         }
     }
 
-    private void checkPageNum(int pageNum) throws Exception {
+    /**
+     * Check if pageNum is legal.
+     * */
+    private void checkPageNum(int pageNum) {
         if (pageNum < 0 || pageNum >= DATA_PAGES_PER_PARTITION){
             final String PAGE_NUM_OOB_ERR = "Page number(%d) is out of the value range:[0, %d]";
-            throw new Exception(String.format(PAGE_NUM_OOB_ERR, pageNum, DATA_PAGES_PER_PARTITION -1));
+            throw new PageException(String.format(PAGE_NUM_OOB_ERR, pageNum, DATA_PAGES_PER_PARTITION -1));
         }
     }
 
+    /**
+     * Implicitly called method, as a result should use lock.
+     * */
     @Override
     public void close() throws IOException {
+        partLock.lock();
         if (fileChannel.isOpen()){
             fileChannel.close();
         }
         file.close();
+        partLock.unlock();
     }
 
     private void writeMasterPage() throws IOException {
@@ -76,12 +90,12 @@ public class Partition implements Closeable {
         for (int i = 0; i < masterPage.length; i++){
             masterBuffer.putShort((short)masterPage[i]);
         }
-        writePage(masterPageOffset(), masterBuffer.array());
+        writePageHelper(masterPageOffset(), masterBuffer.array());
     }
 
     private void writeHeaderPage(int headerIndex) throws IOException {
         long byteOffset = headerPageByteOffset(headerIndex);
-        writePage(byteOffset, headerPages[headerIndex]);
+        writePageHelper(byteOffset, headerPages[headerIndex]);
     }
 
     /**
@@ -91,10 +105,10 @@ public class Partition implements Closeable {
      * */
     private void writeDataPage(int pageNum, byte[] buf) throws IOException {
         long byteOffset = dataPageByteOffset(pageNum);
-        writePage(byteOffset, buf);
+        writePageHelper(byteOffset, buf);
     }
 
-    private void writePage(long byteOffset, byte[] buf) throws IOException {
+    private void writePageHelper(long byteOffset, byte[] buf) throws IOException {
         fileChannel.position(byteOffset);
         fileChannel.write(ByteBuffer.wrap(buf));
     }
@@ -105,7 +119,7 @@ public class Partition implements Closeable {
      *  step2. iterate through each bit of header of step1 to find first free data page
      * @return logical page number of allocated data page.
      * */
-    int allocPage() throws Exception {
+    int allocPage() throws IOException {
         int headerIdx = -1;
         for (int i = 0; i < masterPage.length; i++){
             if (masterPage[i] < DATA_PAGES_PER_HEADER){
@@ -114,7 +128,7 @@ public class Partition implements Closeable {
             }
         }
         if (headerIdx == -1){
-            throw new Exception("No free data page to allocate.");
+            throw new PageException("No free data page to allocate.");
         }
 
         byte[] header = headerPages[headerIdx];
@@ -133,19 +147,25 @@ public class Partition implements Closeable {
         }
 
         if (dataIdx == -1){
-            throw new Exception("No available data page found, but there are %d data pages");
+            throw new PageException("No available data page found, but there are %d data pages");
         }
         return allocPage(headerIdx, dataIdx);
     }
 
-    int allocPage(int headerIdx, int dataIdx) throws Exception {
+    int allocPage(int pageNum) throws IOException {
+        int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
+        int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
+        return allocPage(headerIdx, dataIdx);
+    }
+
+    int allocPage(int headerIdx, int dataIdx) throws IOException {
         byte[] header = headerPages[headerIdx];
         if (header == null){
             header = headerPages[headerIdx] = new byte[PAGE_SIZE];
         }
 
         if (Bits.getBit(header, dataIdx) == Bits.Bit.ONE){
-            throw new Exception("Data page is not free");
+            throw new PageException("Data page is not free");
         }
 
         // data page@<headerIdx, dataIdx> is ready to be allocated at this point
@@ -162,16 +182,16 @@ public class Partition implements Closeable {
      * Free a page
      * @param pageNum: logical page number within this partition
      * */
-    void freePage(int pageNum) throws Exception {
+    void freePage(int pageNum) throws IOException {
         if (isFreePage(pageNum)){
-            throw new Exception("Cannot deallocate a free page");
+            throw new PageException("Cannot deallocate a free page");
         }
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
         freePage(headerIdx, dataIdx);
     }
 
-    private void freePage(int headerIdx, int dataIdx) throws Exception {
+    private void freePage(int headerIdx, int dataIdx) throws IOException {
         byte[] header = headerPages[headerIdx];
         Bits.setBit(header, dataIdx, Bits.Bit.ZERO);
         masterPage[headerIdx] = Bits.countBits(header);
@@ -179,16 +199,25 @@ public class Partition implements Closeable {
         writeHeaderPage(headerIdx);
     }
 
-    void readPage(int pageNum, byte[] buf) throws Exception {
+    void readPage(int pageNum, byte[] buf) throws IOException {
         checkPageNum(pageNum);
         if (isFreePage(pageNum)){
-            throw new Exception("Cannot read a free page");
+            throw new PageException("Cannot read a free page");
         }
 
         fileChannel.read(ByteBuffer.wrap(buf), dataPageByteOffset(pageNum));
     }
 
-    boolean isFreePage(int pageNum) throws Exception {
+    void writePage(int pageNum, byte[] buf) throws IOException {
+        checkPageNum(pageNum);
+        if (isFreePage(pageNum)){
+            throw new PageException("Failed to write to page. It is not allocate.");
+        }
+        fileChannel.write(ByteBuffer.wrap(buf), dataPageByteOffset(pageNum));
+        fileChannel.force(false); // No-Force & Steal policy.
+    }
+
+    boolean isFreePage(int pageNum) throws IOException {
         checkPageNum(pageNum);
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
@@ -199,7 +228,10 @@ public class Partition implements Closeable {
         return Bits.getBit(header, dataIdx) == Bits.Bit.ZERO;
     }
 
-    void freeDataPages() throws Exception {
+    /**
+     * Deallocate all the data pages of this partition
+     * */
+    void freeDataPages() throws IOException {
         for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
             if (masterPage[headerIdx] == 0){
                 continue;

@@ -1,17 +1,16 @@
 package org.csfundamental.database.storage;
 
-import org.csfundamental.database.common.Bits;
 import org.junit.*;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.URL;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.util.UUID;
 
-import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_HEADER;
-import static org.csfundamental.database.storage.DiskManagerImpl.HEADER_PAGES_PER_MASTER;
-import static org.csfundamental.database.storage.IDiskManager.PAGE_SIZE;
+import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
+import static org.csfundamental.database.storage.DiskSpaceManagerImpl.HEADER_PAGES_PER_MASTER;
+import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
 
 public class PartitionTest {
     private static final String PARTITION_PATH = "partitions/EmptyPartition";
@@ -95,7 +94,7 @@ public class PartitionTest {
     }
 
     @Test
-    public void free_AllDataPages() throws Exception {
+    public void free_AllDataPages() throws IOException {
         Partition part1 = new Partition(0);
         part1.open(emptyFile);
         int allocCount = 10;
@@ -112,7 +111,40 @@ public class PartitionTest {
         for (int i = 0; i < headers.length; i++){
             Assert.assertNull(headers[i]);
         }
+    }
 
+    @Test(expected = PageException.class)
+    public void writeUnallocatedPage() throws IOException {
+        Partition part1 = new Partition(0);
+        part1.open(emptyFile);
+        byte[] buf = new byte[PAGE_SIZE];
+        part1.writePage(0, buf);
+    }
+
+    @Test(expected = PageException.class)
+    public void readUnallocatedPage() throws IOException {
+        Partition part = new Partition(0);
+        part.open(emptyFile);
+        byte[] buf = new byte[PAGE_SIZE];
+        part.readPage(0, buf);
+    }
+
+    @Test
+    public void RWAllocatedPage() throws IOException {
+        Partition part = new Partition(0);
+        part.open(emptyFile);
+        int pageNum = part.allocPage();
+        byte[] wBuf = new byte[PAGE_SIZE];
+        ByteBuffer buf = ByteBuffer.wrap(wBuf);
+        UUID id = UUID.randomUUID();
+        for (char ch : id.toString().toCharArray()){
+            buf.putChar(ch);
+        }
+        part.writePage(pageNum, wBuf);
+
+        byte[] rBuf = new byte[PAGE_SIZE];
+        part.readPage(pageNum, rBuf);
+        Assert.assertArrayEquals(wBuf, rBuf);
     }
 
     private void comparePartition(Partition part1, Partition part2){

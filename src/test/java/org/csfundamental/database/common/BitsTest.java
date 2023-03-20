@@ -3,8 +3,8 @@ package org.csfundamental.database.common;
 import org.junit.Assert;
 import org.junit.Test;
 
-import static org.csfundamental.database.storage.DiskManagerImpl.DATA_PAGES_PER_HEADER;
-import static org.csfundamental.database.storage.IDiskManager.PAGE_SIZE;
+import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
+import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
 
 public class BitsTest {
     @Test
