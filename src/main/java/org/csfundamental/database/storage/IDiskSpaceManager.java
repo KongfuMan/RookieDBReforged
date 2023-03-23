@@ -8,19 +8,20 @@ public interface IDiskSpaceManager {
     long MAX_PAGE_COUNT = 10000000000L;
 
     /**
-     * Allocate a new partition with id increase by one from current max partition id
+     * Allocate a new partition with number incremented by one from current max partition number
+     *
+     * @return id of created partition
      * */
-    int allocPart() throws Exception;
-    int allocPart(int partNum) throws Exception;
-
-    void freePart(int partNum) throws Exception;
+    int allocPart() throws IOException;
+    int allocPart(int partNum) throws IOException;
+    void freePart(int partNum) throws IOException;
 
     /**
      * Allocate a new page within a specific partition.
      * @param  partNum: partition number.
      * @return virtual page number.
      * */
-    long allocPage(int partNum) throws Exception;
+    long allocPage(int partNum) throws IOException;
 
     /**
      * Allocates a new page with a specific page number.
@@ -29,7 +30,7 @@ public interface IDiskSpaceManager {
      */
     long allocPage(long page) throws IOException;
 
-    void freePage(long page) throws Exception;
+    void freePage(long page) throws IOException;
 
     /**
      * Read a whole page into the byte array in memory
@@ -45,6 +46,7 @@ public interface IDiskSpaceManager {
      * */
     void writePage(long page, byte[] data) throws IOException;
 
+    int getCurrentPartNum();
     static int getPartNum(long page){
         return (int)(page / MAX_PAGE_COUNT);
     }
