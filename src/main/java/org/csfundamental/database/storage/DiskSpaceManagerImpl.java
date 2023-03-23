@@ -92,7 +92,14 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
 
         part.partLock.lock();
         try{
+            part.init();
             part.freeDataPages();
+            part.close();
+
+            File pf = new File(dir + "/" + partNum);
+            if(!pf.delete()){
+                throw new RuntimeException("Failed to delete the partition file.");
+            }
         }finally {
             part.partLock.unlock();
         }

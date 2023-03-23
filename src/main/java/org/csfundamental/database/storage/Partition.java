@@ -29,9 +29,14 @@ public class Partition implements Closeable {
     public Partition(int partNum){
         this.partNum = partNum;
         this.masterPage = new int[HEADER_PAGES_PER_MASTER];
-        Arrays.fill(masterPage, 0); // explicitly initialize each element to be 0
         this.headerPages = new byte[HEADER_PAGES_PER_MASTER][];
         this.partLock = new ReentrantLock();
+        init();
+    }
+
+    void init(){
+        Arrays.fill(masterPage, 0);
+        Arrays.fill(headerPages, null);
     }
 
     /**
@@ -78,11 +83,12 @@ public class Partition implements Closeable {
     @Override
     public void close() throws IOException {
         partLock.lock();
-        if (fileChannel.isOpen()){
+        try{
             fileChannel.close();
+            file.close();
+        }finally {
+            partLock.unlock();
         }
-        file.close();
-        partLock.unlock();
     }
 
     private void writeMasterPage() throws IOException {
