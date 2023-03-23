@@ -87,14 +87,15 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         managerLock.lock();
         try{
             part = getPartitionByPartNum(partNum);
+            partMap.remove(part.partNum);
         }finally {
             managerLock.unlock();
         }
 
         part.partLock.lock();
         try{
-            part.init();
             part.freeDataPages();
+            part.init();
             part.close();
 
             File pf = new File(dir + "/" + partNum);
@@ -175,7 +176,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
     @Override
     public void readPage(long page, byte[] buf) throws IOException {
         if (buf.length != PAGE_SIZE){
-            throw new PageException("Write page expects a page-sized buffer.");
+            throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
         int pageNum = IDiskSpaceManager.getPageNum(page);
         managerLock.lock();
@@ -196,7 +197,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
     @Override
     public void writePage(long page, byte[] buf) throws IOException {
         if (buf.length != PAGE_SIZE){
-            throw new PageException("Write page expects a page-sized buffer.");
+            throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
         int pageNum = IDiskSpaceManager.getPageNum(page);
         Partition part;

@@ -12,9 +12,15 @@ public interface IDiskSpaceManager extends Closeable {
      * Allocate a new partition with number incremented by one from current max partition number
      *
      * @return id of created partition
-     * */
+     **/
     int allocPart() throws IOException;
+
     int allocPart(int partNum) throws IOException;
+
+    /**
+     * Free a partition with specified partition number.
+     * The partition object model is reset in memory and the backing file is deleted.
+     **/
     void freePart(int partNum) throws IOException;
 
     /**
