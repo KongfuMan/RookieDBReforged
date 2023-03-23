@@ -1,5 +1,6 @@
 package org.csfundamental.database.storage;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -227,5 +228,12 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
     private Partition getPartitionByPageNum(long page){
         int partNum = IDiskSpaceManager.getPartNum(page);
         return getPartitionByPartNum(partNum);
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (Partition part : partMap.values()){
+            part.close();
+        }
     }
 }
