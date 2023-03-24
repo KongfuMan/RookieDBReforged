@@ -1,6 +1,5 @@
 package org.csfundamental.database.storage;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -14,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Manages a collection of partitions.
  * (Singleton: only one instance per process)
  * */
-public class DiskSpaceManagerImpl implements IDiskSpaceManager {
+public class DiskSpaceManagerImpl implements DiskSpaceManager {
     private final Map<Integer, Partition> partMap;
     private final AtomicInteger partNumCounter;
     private final ReentrantLock managerLock;
@@ -126,7 +125,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         part.partLock.lock();
         try{
             int pageNum = part.allocPage();
-            return IDiskSpaceManager.getVirtualPageNum(partNum, pageNum);
+            return DiskSpaceManager.getVirtualPageNum(partNum, pageNum);
         }finally {
             part.partLock.unlock();
         }
@@ -146,7 +145,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
             managerLock.unlock();
         }
 
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         part.partLock.lock();
         try{
             part.allocPage(pageNum);
@@ -165,7 +164,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
             managerLock.unlock();
         }
 
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         part.partLock.lock();
         try{
             part.freePage(pageNum);
@@ -178,7 +177,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         managerLock.lock();
         Partition part;
         try{
@@ -199,7 +198,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         Partition part;
         managerLock.lock();
         try{
@@ -227,7 +226,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         return partMap.get(partNum);
     }
     private Partition getPartitionByPageNum(long page){
-        int partNum = IDiskSpaceManager.getPartNum(page);
+        int partNum = DiskSpaceManager.getPartNum(page);
         return getPartitionByPartNum(partNum);
     }
 

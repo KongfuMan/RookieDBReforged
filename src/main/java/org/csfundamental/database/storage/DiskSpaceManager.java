@@ -3,7 +3,7 @@ package org.csfundamental.database.storage;
 import java.io.Closeable;
 import java.io.IOException;
 
-public interface IDiskSpaceManager extends Closeable {
+public interface DiskSpaceManager extends Closeable {
     int PAGE_SIZE = 4096;
     long INVALID_PAGE_NUM = -1L;
     long MAX_PAGE_COUNT = 10000000000L;

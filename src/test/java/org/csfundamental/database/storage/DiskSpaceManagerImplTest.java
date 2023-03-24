@@ -26,13 +26,13 @@ public class DiskSpaceManagerImplTest {
         dirPath = dsmRootDir.getAbsolutePath();
     }
 
-    private IDiskSpaceManager createDiskSpaceManager() {
+    private DiskSpaceManager createDiskSpaceManager() {
         return new DiskSpaceManagerImpl(dirPath);
     }
 
     @Test
     public void allocPartitionsWithMultipleThread() throws InterruptedException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         int nThread = 10;
         int allocCount = 30;
         Thread[] allocPartWorkers = new Thread[nThread];
@@ -64,13 +64,13 @@ public class DiskSpaceManagerImplTest {
 
     @Test(expected = NoSuchElementException.class)
     public void freeUnallocatedPart() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         dsm.freePart(0);
     }
 
     @Test
     public void testFreePart() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         int partNum = dsm.allocPart();
         Assert.assertEquals(0, partNum);
         Assert.assertTrue(dsmRootPath.resolve(String.valueOf(partNum)).toFile().exists());
@@ -81,7 +81,7 @@ public class DiskSpaceManagerImplTest {
 
     @Test
     public void testAllocPageZeroed() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         int partNum = dsm.allocPart(0);
         long pageNum1 = dsm.allocPage(0);
         long pageNum2 = dsm.allocPage(partNum);
@@ -89,11 +89,11 @@ public class DiskSpaceManagerImplTest {
         assertEquals(0L, pageNum1);
         assertEquals(1L, pageNum2);
 
-        byte[] buf = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] buf = new byte[DiskSpaceManager.PAGE_SIZE];
         dsm.readPage(pageNum1, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
         dsm.readPage(pageNum2, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
 
         long pageNum3 = dsm.allocPage(partNum);
         long pageNum4 = dsm.allocPage(partNum);
@@ -101,73 +101,73 @@ public class DiskSpaceManagerImplTest {
 
         dsm = createDiskSpaceManager();
         dsm.readPage(pageNum1, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
         dsm.readPage(pageNum2, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
         dsm.readPage(pageNum3, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
         dsm.readPage(pageNum4, buf);
-        assertArrayEquals(new byte[IDiskSpaceManager.PAGE_SIZE], buf);
+        assertArrayEquals(new byte[DiskSpaceManager.PAGE_SIZE], buf);
 
         dsm.close();
     }
 
     @Test(expected = NoSuchElementException.class)
     public void testReadBadPart() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
-        dsm.readPage(0, new byte[IDiskSpaceManager.PAGE_SIZE]);
+        DiskSpaceManager dsm = createDiskSpaceManager();
+        dsm.readPage(0, new byte[DiskSpaceManager.PAGE_SIZE]);
         dsm.close();
     }
 
     @Test(expected = NoSuchElementException.class)
     public void testWriteBadPart() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
-        dsm.writePage(0, new byte[IDiskSpaceManager.PAGE_SIZE]);
+        DiskSpaceManager dsm = createDiskSpaceManager();
+        dsm.writePage(0, new byte[DiskSpaceManager.PAGE_SIZE]);
         dsm.close();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testReadBadBuffer() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
-        dsm.readPage(0, new byte[IDiskSpaceManager.PAGE_SIZE - 1]);
+        DiskSpaceManager dsm = createDiskSpaceManager();
+        dsm.readPage(0, new byte[DiskSpaceManager.PAGE_SIZE - 1]);
         dsm.close();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testWriteBadBuffer() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
-        dsm.writePage(0, new byte[IDiskSpaceManager.PAGE_SIZE + 1]);
+        DiskSpaceManager dsm = createDiskSpaceManager();
+        dsm.writePage(0, new byte[DiskSpaceManager.PAGE_SIZE + 1]);
         dsm.close();
     }
 
     @Test(expected = PageException.class)
     public void testReadOutOfBounds() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         dsm.allocPart();
-        dsm.readPage(0, new byte[IDiskSpaceManager.PAGE_SIZE]);
+        dsm.readPage(0, new byte[DiskSpaceManager.PAGE_SIZE]);
         dsm.close();
     }
 
     @Test(expected = PageException.class)
     public void testWriteOutOfBounds() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         dsm.allocPart();
-        dsm.writePage(0, new byte[IDiskSpaceManager.PAGE_SIZE]);
+        dsm.writePage(0, new byte[DiskSpaceManager.PAGE_SIZE]);
         dsm.close();
     }
 
     @Test
     public void testReadWrite() throws IOException {
-        IDiskSpaceManager dsm = createDiskSpaceManager();
+        DiskSpaceManager dsm = createDiskSpaceManager();
         int partNum = dsm.allocPart();
         long pageNum = dsm.allocPage(partNum);
 
-        byte[] buf = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] buf = new byte[DiskSpaceManager.PAGE_SIZE];
         for (int i = 0; i < buf.length; ++i) {
             buf[i] = (byte) (Integer.valueOf(i).hashCode() & 0xFF);
         }
         dsm.writePage(pageNum, buf);
-        byte[] readbuf = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf = new byte[DiskSpaceManager.PAGE_SIZE];
         dsm.readPage(pageNum, readbuf);
 
         assertArrayEquals(buf, readbuf);
@@ -178,11 +178,11 @@ public class DiskSpaceManagerImplTest {
 
     @Test
     public void testReadWritePersistent() throws IOException {
-        IDiskSpaceManager diskSpaceManager = createDiskSpaceManager();
+        DiskSpaceManager diskSpaceManager = createDiskSpaceManager();
         int partNum = diskSpaceManager.allocPart();
         long pageNum = diskSpaceManager.allocPage(partNum);
 
-        byte[] buf = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] buf = new byte[DiskSpaceManager.PAGE_SIZE];
         for (int i = 0; i < buf.length; ++i) {
             buf[i] = (byte) (Integer.valueOf(i).hashCode() & 0xFF);
         }
@@ -190,7 +190,7 @@ public class DiskSpaceManagerImplTest {
         diskSpaceManager.close();
 
         diskSpaceManager = createDiskSpaceManager();
-        byte[] readbuf = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf = new byte[DiskSpaceManager.PAGE_SIZE];
         diskSpaceManager.readPage(pageNum, readbuf);
 
         assertArrayEquals(buf, readbuf);
@@ -201,16 +201,16 @@ public class DiskSpaceManagerImplTest {
 
     @Test
     public void testReadWriteMultiplePartitions() throws IOException {
-        IDiskSpaceManager diskSpaceManager = createDiskSpaceManager();
+        DiskSpaceManager diskSpaceManager = createDiskSpaceManager();
         int partNum1 = diskSpaceManager.allocPart();
         int partNum2 = diskSpaceManager.allocPart();
         long pageNum11 = diskSpaceManager.allocPage(partNum1);
         long pageNum21 = diskSpaceManager.allocPage(partNum2);
         long pageNum22 = diskSpaceManager.allocPage(partNum2);
 
-        byte[] buf1 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] buf2 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] buf3 = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] buf1 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] buf2 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] buf3 = new byte[DiskSpaceManager.PAGE_SIZE];
         for (int i = 0; i < buf1.length; ++i) {
             buf1[i] = (byte) (Integer.valueOf(i).hashCode() & 0xFF);
             buf2[i] = (byte) ((Integer.valueOf(i).hashCode() >> 8) & 0xFF);
@@ -219,9 +219,9 @@ public class DiskSpaceManagerImplTest {
         diskSpaceManager.writePage(pageNum11, buf1);
         diskSpaceManager.writePage(pageNum22, buf3);
         diskSpaceManager.writePage(pageNum21, buf2);
-        byte[] readbuf1 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] readbuf2 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] readbuf3 = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf1 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf2 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf3 = new byte[DiskSpaceManager.PAGE_SIZE];
         diskSpaceManager.readPage(pageNum11, readbuf1);
         diskSpaceManager.readPage(pageNum21, readbuf2);
         diskSpaceManager.readPage(pageNum22, readbuf3);
@@ -237,16 +237,16 @@ public class DiskSpaceManagerImplTest {
 
     @Test
     public void testReadWriteMultiplePartitionsPersistent() throws IOException {
-        IDiskSpaceManager diskSpaceManager = createDiskSpaceManager();
+        DiskSpaceManager diskSpaceManager = createDiskSpaceManager();
         int partNum1 = diskSpaceManager.allocPart();
         int partNum2 = diskSpaceManager.allocPart();
         long pageNum11 = diskSpaceManager.allocPage(partNum1);
         long pageNum21 = diskSpaceManager.allocPage(partNum2);
         long pageNum22 = diskSpaceManager.allocPage(partNum2);
 
-        byte[] buf1 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] buf2 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] buf3 = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] buf1 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] buf2 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] buf3 = new byte[DiskSpaceManager.PAGE_SIZE];
         for (int i = 0; i < buf1.length; ++i) {
             buf1[i] = (byte) (Integer.valueOf(i).hashCode() & 0xFF);
             buf2[i] = (byte) ((Integer.valueOf(i).hashCode() >> 8) & 0xFF);
@@ -258,9 +258,9 @@ public class DiskSpaceManagerImplTest {
         diskSpaceManager.close();
 
         diskSpaceManager = createDiskSpaceManager();
-        byte[] readbuf1 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] readbuf2 = new byte[IDiskSpaceManager.PAGE_SIZE];
-        byte[] readbuf3 = new byte[IDiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf1 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf2 = new byte[DiskSpaceManager.PAGE_SIZE];
+        byte[] readbuf3 = new byte[DiskSpaceManager.PAGE_SIZE];
         diskSpaceManager.readPage(pageNum11, readbuf1);
         diskSpaceManager.readPage(pageNum21, readbuf2);
         diskSpaceManager.readPage(pageNum22, readbuf3);
