@@ -38,12 +38,8 @@ public class DiskSpaceManagerImplTest {
         Thread[] allocPartWorkers = new Thread[nThread];
         for (int i = 0; i < allocPartWorkers.length; i++){
             allocPartWorkers[i] = new Thread(()->{
-                try {
-                    for (int j = 0; j < allocCount; j++){
-                        dsm.allocPart();
-                    }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                for (int j = 0; j < allocCount; j++){
+                    dsm.allocPart();
                 }
             });
         }
