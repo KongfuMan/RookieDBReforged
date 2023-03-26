@@ -13,45 +13,45 @@ public interface DiskSpaceManager extends Closeable {
      *
      * @return id of created partition
      **/
-    int allocPart() throws IOException;
+    int allocPart();
 
-    int allocPart(int partNum) throws IOException;
+    int allocPart(int partNum);
 
     /**
      * Free a partition with specified partition number.
      * The partition object model is reset in memory and the backing file is deleted.
      **/
-    void freePart(int partNum) throws IOException;
+    void freePart(int partNum);
 
     /**
      * Allocate a new page within a specific partition.
      * @param  partNum: partition number.
      * @return virtual page number.
      * */
-    long allocPage(int partNum) throws IOException;
+    long allocPage(int partNum);
 
     /**
      * Allocates a new page with a specific page number.
      * @param page: virtual page number of new page
      * @return virtual page number of new page
      */
-    long allocPage(long page) throws IOException;
+    long allocPage(long page);
 
-    void freePage(long page) throws IOException;
+    void freePage(long page);
 
     /**
      * Read a whole page into the byte array in memory
      * @param page: virtual page number.
      * @param data: byte array to save page bytes
      * */
-    void readPage(long page, byte[] data) throws IOException;
+    void readPage(long page, byte[] data);
 
     /**
      * Write the data byte array into specified page on disk
      * @param page: virtual page number
      * @param data: byte array from which data is saved to page on disk
      * */
-    void writePage(long page, byte[] data) throws IOException;
+    void writePage(long page, byte[] data);
 
     int getCurrentPartNum();
     static int getPartNum(long page){
