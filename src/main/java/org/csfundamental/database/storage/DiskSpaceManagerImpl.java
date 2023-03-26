@@ -42,7 +42,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
                 try{
                     int partNum = Integer.parseInt(fileName);
                     allocPart(partNum);
-                }catch (NumberFormatException | IOException e){
+                }catch (NumberFormatException e){
                     part.delete();
                     throw new PageException("Create partition failed.");
                 }
@@ -50,16 +50,16 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         }
     }
     @Override
-    public int allocPart() throws IOException {
+    public int allocPart() {
         return allocPartHelper(this.partNumCounter.getAndIncrement());
     }
     @Override
-    public int allocPart(int partNum) throws IOException {
+    public int allocPart(int partNum) {
         // atomically update current counter to next available partition number
         partNumCounter.updateAndGet((int maxPartNum) -> Math.max(maxPartNum, partNum) + 1);
         return allocPartHelper(partNum);
     }
-    private int allocPartHelper(int partNum) throws IOException {
+    private int allocPartHelper(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -81,7 +81,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         return partNum;
     }
     @Override
-    public void freePart(int partNum) throws IOException {
+    public void freePart(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -101,7 +101,10 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             if(!pf.delete()){
                 throw new RuntimeException("Failed to delete the partition file.");
             }
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
@@ -113,7 +116,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
      * @return virtual page number scoped to disk space manager.
      * */
     @Override
-    public long allocPage(int partNum) throws IOException {
+    public long allocPage(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -126,7 +129,10 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         try{
             int pageNum = part.allocPage();
             return DiskSpaceManager.getVirtualPageNum(partNum, pageNum);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
@@ -136,7 +142,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
      * @param page: virtual page number
      * */
     @Override
-    public long allocPage(long page) throws IOException {
+    public long allocPage(long page) {
         Partition part;
         managerLock.lock();
         try{
@@ -150,12 +156,15 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         try{
             part.allocPage(pageNum);
             return page;
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void freePage(long page) throws IOException {
+    public void freePage(long page){
         Partition part;
         managerLock.lock();
         try {
@@ -168,12 +177,15 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         part.partLock.lock();
         try{
             part.freePage(pageNum);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void readPage(long page, byte[] buf) throws IOException {
+    public void readPage(long page, byte[] buf) {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
@@ -189,12 +201,15 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         try{
             part.partLock.lock();
             part.readPage(pageNum, buf);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void writePage(long page, byte[] buf) throws IOException {
+    public void writePage(long page, byte[] buf) {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
@@ -210,7 +225,10 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         try {
             part.partLock.lock();
             part.writePage(pageNum, buf);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }

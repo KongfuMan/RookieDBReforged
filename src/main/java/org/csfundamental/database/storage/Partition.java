@@ -40,30 +40,32 @@ public class Partition implements Closeable {
     }
 
     /**
-     * Open the OS file backing this partition and load master/header pages into memory
-     *
-     * @throws IOException if fail to open the file
+     * Open the OS file backing this partition and load master/header pages into memory.
      **/
-    void open(String fileName) throws IOException {
-        file = new RandomAccessFile(fileName, "rw");
-        fileChannel = file.getChannel();
-        if (fileChannel.size() == 0){
-            // new file, write initial master page
-            writeMasterPage();
-        }else {
-            // first page(pageNum=0) is always master page
-            ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
-            fileChannel.read(masterBuffer, Partition.masterPageOffset());
-            masterBuffer.position(0);
-            for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
-                int allocNum = Short.toUnsignedInt(masterBuffer.getShort()); //make sure short is unsigned here, otherwise will overflow
-                if (allocNum != 0){
-                    this.masterPage[headerIdx] = allocNum;
-                    ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
-                    fileChannel.read(headerBuffer, Partition.headerPageByteOffset(headerIdx));
-                    headerPages[headerIdx] = headerBuffer.array();
+    void open(String fileName) {
+        try{
+            file = new RandomAccessFile(fileName, "rw");
+            fileChannel = file.getChannel();
+            if (fileChannel.size() == 0){
+                // new file, write initial master page
+                writeMasterPage();
+            }else {
+                // first page(pageNum=0) is always master page
+                ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
+                fileChannel.read(masterBuffer, Partition.masterPageOffset());
+                masterBuffer.position(0);
+                for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
+                    int allocNum = Short.toUnsignedInt(masterBuffer.getShort()); //make sure short is unsigned here, otherwise will overflow
+                    if (allocNum != 0){
+                        this.masterPage[headerIdx] = allocNum;
+                        ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
+                        fileChannel.read(headerBuffer, Partition.headerPageByteOffset(headerIdx));
+                        headerPages[headerIdx] = headerBuffer.array();
+                    }
                 }
             }
+        }catch (IOException e){
+            throw new PageException();
         }
     }
 
