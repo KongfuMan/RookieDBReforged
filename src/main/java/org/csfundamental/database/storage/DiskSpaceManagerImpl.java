@@ -234,6 +234,26 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
     }
 
     @Override
+    public boolean pageAllocated(long page) {
+        int partNum = DiskSpaceManager.getPartNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
+        managerLock.lock();
+        Partition partition;
+        try {
+            partition = getPartitionByPartNum(partNum);
+        }finally {
+            managerLock.unlock();
+        }
+
+        partition.partLock.lock();
+        try {
+            return !partition.isFreePage(pageNum);
+        }finally {
+            partition.partLock.unlock();
+        }
+    }
+
+    @Override
     public int getCurrentPartNum() {
         return partNumCounter.get();
     }

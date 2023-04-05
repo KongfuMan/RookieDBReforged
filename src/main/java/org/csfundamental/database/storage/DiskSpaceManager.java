@@ -70,6 +70,14 @@ public interface DiskSpaceManager extends Closeable {
      * */
     void writePage(long page, byte[] data);
 
+    /**
+     * Checks if a page is allocated
+     *
+     * @param page number of page to check
+     * @return true if the page is allocated, false otherwise
+     */
+    boolean pageAllocated(long page);
+
     int getCurrentPartNum();
     static int getPartNum(long page){
         return (int)(page / MAX_PAGE_COUNT);
