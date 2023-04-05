@@ -9,47 +9,64 @@ public interface DiskSpaceManager extends Closeable {
     long MAX_PAGE_COUNT = 10000000000L;
 
     /**
-     * Allocate a new partition with number incremented by one from current max partition number
+     * Allocate a new partition with number incremented by one from current maximum partition number
      *
-     * @return id of created partition
+     * @return The ID of the created partition.
      **/
     int allocPart();
 
+    /**
+     * Allocates a new partition with a specified partition number.
+     *
+     * @param partNum The partition number.
+     * @return The ID of the created partition.
+     **/
     int allocPart(int partNum);
 
     /**
-     * Free a partition with specified partition number.
+     * Frees a partition with the specified partition number.
      * The partition object model is reset in memory and the backing file is deleted.
+     *
+     * @param partNum The partition number.
      **/
     void freePart(int partNum);
 
     /**
      * Allocate a new page within a specific partition.
-     * @param  partNum: partition number.
-     * @return virtual page number.
+     *
+     * @param partNum The partition number.
+     * @return The virtual page number.
      * */
     long allocPage(int partNum);
 
     /**
-     * Allocates a new page with a specific page number.
-     * @param page: virtual page number of new page
+     * Allocates a new page with a specific virtual page number.
+     *
+     * @param page virtual page number of new page
      * @return virtual page number of new page
      */
     long allocPage(long page);
 
+    /**
+     * Frees a page with the specific virtual page number.
+     *
+     * @param page The virtual page number.
+     */
     void freePage(long page);
 
     /**
-     * Read a whole page into the byte array in memory
-     * @param page: virtual page number.
-     * @param data: byte array to save page bytes
+     * Read a whole page into the byte array in memory.
+     *
+     * @param page virtual page number.
+     * @param data byte array to save page bytes.
      * */
     void readPage(long page, byte[] data);
 
     /**
-     * Write the data byte array into specified page on disk
-     * @param page: virtual page number
-     * @param data: byte array from which data is saved to page on disk
+     * Write the data byte array into the specified page on disk
+     *
+     * @param page The virtual page number
+     * @param data The byte array from which data is saved into page on disk
      * */
     void writePage(long page, byte[] data);
 
@@ -59,7 +76,7 @@ public interface DiskSpaceManager extends Closeable {
     }
 
     /**
-     * Convert virtual page number to logic page number scoped in single partition.
+     * Converts a virtual page number to logic page number scoped in single partition.
      * */
     static int getPageNum(long page){
         return (int)(page % MAX_PAGE_COUNT);
