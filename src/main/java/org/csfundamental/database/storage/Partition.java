@@ -225,7 +225,7 @@ public class Partition implements Closeable {
         fileChannel.force(false); // No-Force & Steal policy.
     }
 
-    boolean isFreePage(int pageNum) throws IOException {
+    boolean isFreePage(int pageNum) {
         checkPageNum(pageNum);
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;
