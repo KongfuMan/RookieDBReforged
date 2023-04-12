@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static org.csfundamental.database.storage.DiskSpaceManagerImpl.HEADER_PAGES_PER_MASTER;
 import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
-import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
+import static org.csfundamental.database.storage.DiskSpaceManager.PAGE_SIZE;
 
 /**
  * One partition is backed by on OS file.
@@ -40,30 +40,32 @@ public class Partition implements Closeable {
     }
 
     /**
-     * Open the OS file backing this partition and load master/header pages into memory
-     *
-     * @throws IOException if fail to open the file
+     * Open the OS file backing this partition and load master/header pages into memory.
      **/
-    void open(String fileName) throws IOException {
-        file = new RandomAccessFile(fileName, "rw");
-        fileChannel = file.getChannel();
-        if (fileChannel.size() == 0){
-            // new file, write initial master page
-            writeMasterPage();
-        }else {
-            // first page(pageNum=0) is always master page
-            ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
-            fileChannel.read(masterBuffer, Partition.masterPageOffset());
-            masterBuffer.position(0);
-            for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
-                int allocNum = Short.toUnsignedInt(masterBuffer.getShort()); //make sure short is unsigned here, otherwise will overflow
-                if (allocNum != 0){
-                    this.masterPage[headerIdx] = allocNum;
-                    ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
-                    fileChannel.read(headerBuffer, Partition.headerPageByteOffset(headerIdx));
-                    headerPages[headerIdx] = headerBuffer.array();
+    void open(String fileName) {
+        try{
+            file = new RandomAccessFile(fileName, "rw");
+            fileChannel = file.getChannel();
+            if (fileChannel.size() == 0){
+                // new file, write initial master page
+                writeMasterPage();
+            }else {
+                // first page(pageNum=0) is always master page
+                ByteBuffer masterBuffer = ByteBuffer.allocate(PAGE_SIZE);
+                fileChannel.read(masterBuffer, Partition.masterPageOffset());
+                masterBuffer.position(0);
+                for (int headerIdx = 0; headerIdx < HEADER_PAGES_PER_MASTER; headerIdx++){
+                    int allocNum = Short.toUnsignedInt(masterBuffer.getShort()); //make sure short is unsigned here, otherwise will overflow
+                    if (allocNum != 0){
+                        this.masterPage[headerIdx] = allocNum;
+                        ByteBuffer headerBuffer = ByteBuffer.allocate(PAGE_SIZE);
+                        fileChannel.read(headerBuffer, Partition.headerPageByteOffset(headerIdx));
+                        headerPages[headerIdx] = headerBuffer.array();
+                    }
                 }
             }
+        }catch (IOException e){
+            throw new PageException();
         }
     }
 
@@ -223,7 +225,7 @@ public class Partition implements Closeable {
         fileChannel.force(false); // No-Force & Steal policy.
     }
 
-    boolean isFreePage(int pageNum) throws IOException {
+    boolean isFreePage(int pageNum) {
         checkPageNum(pageNum);
         int headerIdx = pageNum / DATA_PAGES_PER_HEADER;
         int dataIdx = pageNum % DATA_PAGES_PER_HEADER;

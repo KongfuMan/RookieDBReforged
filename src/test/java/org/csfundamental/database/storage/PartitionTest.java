@@ -10,7 +10,7 @@ import java.util.UUID;
 
 import static org.csfundamental.database.storage.DiskSpaceManagerImpl.DATA_PAGES_PER_HEADER;
 import static org.csfundamental.database.storage.DiskSpaceManagerImpl.HEADER_PAGES_PER_MASTER;
-import static org.csfundamental.database.storage.IDiskSpaceManager.PAGE_SIZE;
+import static org.csfundamental.database.storage.DiskSpaceManager.PAGE_SIZE;
 
 public class PartitionTest {
     @Rule

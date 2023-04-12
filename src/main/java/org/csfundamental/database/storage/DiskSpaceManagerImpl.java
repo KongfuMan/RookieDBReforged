@@ -1,6 +1,5 @@
 package org.csfundamental.database.storage;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -14,7 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Manages a collection of partitions.
  * (Singleton: only one instance per process)
  * */
-public class DiskSpaceManagerImpl implements IDiskSpaceManager {
+public class DiskSpaceManagerImpl implements DiskSpaceManager {
     private final Map<Integer, Partition> partMap;
     private final AtomicInteger partNumCounter;
     private final ReentrantLock managerLock;
@@ -43,7 +42,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
                 try{
                     int partNum = Integer.parseInt(fileName);
                     allocPart(partNum);
-                }catch (NumberFormatException | IOException e){
+                }catch (NumberFormatException e){
                     part.delete();
                     throw new PageException("Create partition failed.");
                 }
@@ -51,16 +50,16 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         }
     }
     @Override
-    public int allocPart() throws IOException {
+    public int allocPart() {
         return allocPartHelper(this.partNumCounter.getAndIncrement());
     }
     @Override
-    public int allocPart(int partNum) throws IOException {
+    public int allocPart(int partNum) {
         // atomically update current counter to next available partition number
         partNumCounter.updateAndGet((int maxPartNum) -> Math.max(maxPartNum, partNum) + 1);
         return allocPartHelper(partNum);
     }
-    private int allocPartHelper(int partNum) throws IOException {
+    private int allocPartHelper(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -82,7 +81,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         return partNum;
     }
     @Override
-    public void freePart(int partNum) throws IOException {
+    public void freePart(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -102,7 +101,10 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
             if(!pf.delete()){
                 throw new RuntimeException("Failed to delete the partition file.");
             }
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
@@ -114,7 +116,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
      * @return virtual page number scoped to disk space manager.
      * */
     @Override
-    public long allocPage(int partNum) throws IOException {
+    public long allocPage(int partNum) {
         Partition part;
         managerLock.lock();
         try{
@@ -126,8 +128,11 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         part.partLock.lock();
         try{
             int pageNum = part.allocPage();
-            return IDiskSpaceManager.getVirtualPageNum(partNum, pageNum);
-        }finally {
+            return DiskSpaceManager.getVirtualPageNum(partNum, pageNum);
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
@@ -137,7 +142,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
      * @param page: virtual page number
      * */
     @Override
-    public long allocPage(long page) throws IOException {
+    public long allocPage(long page) {
         Partition part;
         managerLock.lock();
         try{
@@ -146,17 +151,20 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
             managerLock.unlock();
         }
 
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         part.partLock.lock();
         try{
             part.allocPage(pageNum);
             return page;
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void freePage(long page) throws IOException {
+    public void freePage(long page){
         Partition part;
         managerLock.lock();
         try {
@@ -165,20 +173,23 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
             managerLock.unlock();
         }
 
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         part.partLock.lock();
         try{
             part.freePage(pageNum);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void readPage(long page, byte[] buf) throws IOException {
+    public void readPage(long page, byte[] buf) {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         managerLock.lock();
         Partition part;
         try{
@@ -190,16 +201,19 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         try{
             part.partLock.lock();
             part.readPage(pageNum, buf);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
         }
     }
     @Override
-    public void writePage(long page, byte[] buf) throws IOException {
+    public void writePage(long page, byte[] buf) {
         if (buf.length != PAGE_SIZE){
             throw new IllegalArgumentException("Write page expects a page-sized buffer.");
         }
-        int pageNum = IDiskSpaceManager.getPageNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
         Partition part;
         managerLock.lock();
         try{
@@ -211,8 +225,31 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         try {
             part.partLock.lock();
             part.writePage(pageNum, buf);
-        }finally {
+        }catch (IOException e){
+            throw new PageException("");
+        }
+        finally {
             part.partLock.unlock();
+        }
+    }
+
+    @Override
+    public boolean pageAllocated(long page) {
+        int partNum = DiskSpaceManager.getPartNum(page);
+        int pageNum = DiskSpaceManager.getPageNum(page);
+        managerLock.lock();
+        Partition partition;
+        try {
+            partition = getPartitionByPartNum(partNum);
+        }finally {
+            managerLock.unlock();
+        }
+
+        partition.partLock.lock();
+        try {
+            return !partition.isFreePage(pageNum);
+        }finally {
+            partition.partLock.unlock();
         }
     }
 
@@ -227,7 +264,7 @@ public class DiskSpaceManagerImpl implements IDiskSpaceManager {
         return partMap.get(partNum);
     }
     private Partition getPartitionByPageNum(long page){
-        int partNum = IDiskSpaceManager.getPartNum(page);
+        int partNum = DiskSpaceManager.getPartNum(page);
         return getPartitionByPartNum(partNum);
     }
 
