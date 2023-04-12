@@ -2,6 +2,7 @@ package org.csfundamental.database.buffer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class LRUCacheStrategy implements CacheStrategy {
     private Map<Long, Tag> pageTagMap;
@@ -100,6 +101,11 @@ public class LRUCacheStrategy implements CacheStrategy {
     public void remove(long page) {
         Tag remove = pageTagMap.remove(page);
         removeTag(remove);
+    }
+
+    @Override
+    public Iterable<BufferFrame> getAllPageFrames() {
+        return pageTagMap.values().stream().map(tag -> tag.frame).collect(Collectors.toList());
     }
 
     private void removeTag(Tag tag){

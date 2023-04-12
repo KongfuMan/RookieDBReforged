@@ -26,4 +26,6 @@ public interface CacheStrategy {
     BufferFrame evict();
 
     void remove(long page);
+
+    Iterable<BufferFrame> getAllPageFrames();
 }

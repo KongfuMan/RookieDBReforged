@@ -105,6 +105,13 @@ public class BufferManager implements Closeable {
         return fetchPage(page);
     }
 
+    /**
+     * Frees a page - evicts the page from cache, and tells the disk space manager
+     * that the page is no longer needed. Page must be pinned before this call,
+     * and cannot be used after this call (aside from unpinning).
+     *
+     * @param page page to free
+     */
     public void freePage(Page page) {
         managerLock.lock();
         long pageNum = page.getPageNum();
@@ -125,18 +132,23 @@ public class BufferManager implements Closeable {
         }
     }
 
+    /**
+     *
+     * */
     public void evict(long page) {
         managerLock.lock();
         BufferFrame frame = cacheStrategy.get(page);
-        if (!frame.isPinned()){
+        if (frame != null && !frame.isPinned()){
             cacheStrategy.remove(page);
-            frame.flush();
+            frame.invalidate();
         }
         managerLock.unlock();
     }
 
     public void evictAll() {
-
+        for(BufferFrame frame  : cacheStrategy.getAllPageFrames()){
+            evict(frame.getPageNum());
+        }
     }
 
     public void iteratePagesByPageNumber(BiConsumer<Long, Boolean> process) {
