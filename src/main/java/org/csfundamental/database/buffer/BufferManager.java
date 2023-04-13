@@ -16,13 +16,13 @@ public class BufferManager implements Closeable {
     public static final int RESERVED_SPACE = 36;
     public static final int EFFECTIVE_PAGE_SIZE = DiskSpaceManager.PAGE_SIZE - RESERVED_SPACE;
 
-    private final DiskSpaceManager dsm;
+    private final DiskSpaceManager diskSpaceManager;
     private final CacheStrategy cacheStrategy;
     private final ReentrantLock managerLock;
     private long numIO;
 
-    public BufferManager(DiskSpaceManager dsm, int capacity){
-        this.dsm = dsm;
+    public BufferManager(DiskSpaceManager diskSpaceManager, int capacity){
+        this.diskSpaceManager = diskSpaceManager;
         this.cacheStrategy = new LRUCacheStrategy(capacity);
         this.managerLock = new ReentrantLock();
         this.numIO = 0;
@@ -41,7 +41,7 @@ public class BufferManager implements Closeable {
         Frame evictedFrame;
         managerLock.lock();
         try{
-            if (!dsm.pageAllocated(page)){
+            if (!diskSpaceManager.pageAllocated(page)){
                 throw new PageException("Page not allocated");
             }
             newFrame = (Frame)cacheStrategy.get(page);
@@ -69,7 +69,7 @@ public class BufferManager implements Closeable {
         try{
             newFrame.pin();
             // read data into buffer frame from disk;
-            dsm.readPage(page, newFrame.content);
+            diskSpaceManager.readPage(page, newFrame.content);
             this.incrementNumIO();
             return newFrame;
         }finally {
@@ -96,12 +96,12 @@ public class BufferManager implements Closeable {
      * @return buffer frame for the new page
      */
     BufferFrame fetchNewPageFrame(int partNum) {
-        long page = dsm.allocPage(partNum);
+        long page = diskSpaceManager.allocPage(partNum);
         return fetchPageFrame(page);
     }
 
     Page fetchNewPage(int partNum) {
-        long page = dsm.allocPage(partNum);
+        long page = diskSpaceManager.allocPage(partNum);
         return fetchPage(page);
     }
 
@@ -126,7 +126,7 @@ public class BufferManager implements Closeable {
         try{
             //TODO: evict all pages in this partition
 
-            dsm.freePart(partNum);
+            diskSpaceManager.freePart(partNum);
         }finally {
             managerLock.unlock();
         }
@@ -214,7 +214,7 @@ public class BufferManager implements Closeable {
             frameLock.lock();
             pin();
             try {
-                BufferManager.this.dsm.writePage(this.page, this.content);
+                BufferManager.this.diskSpaceManager.writePage(this.page, this.content);
             }finally {
                 unpin();
                 frameLock.unlock();
