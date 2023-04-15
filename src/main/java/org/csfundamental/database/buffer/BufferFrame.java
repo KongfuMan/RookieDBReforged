@@ -1,7 +1,7 @@
 package org.csfundamental.database.buffer;
 
 /**
- * Buffer frame represents loaded on-disk page into memory.
+ * Buffer frame represents a loaded on-disk page in memory.
  */
 public abstract class BufferFrame {
     Object tag = null;
@@ -21,7 +21,7 @@ public abstract class BufferFrame {
      */
     protected void unpin() {
         if (!isPinned()) {
-            throw new IllegalStateException("cannot unpin unpinned frame");
+            throw new IllegalStateException("Cannot unpin an unpinned frame.");
         }
         --pinCount;
     }
@@ -52,7 +52,8 @@ public abstract class BufferFrame {
     abstract void readBytes(short position, short len, byte[] buf);
 
     /**
-     * Write to the buffer frame without actually flushing the data, and mark frame as dirtied.
+     * Write to the buffer frame following "NO Force" policy.
+     * Writing without actual flushing the data to disk, and mark frame as dirtied.
      * @param position position in buffer frame to start writing
      * @param len number of bytes to write
      * @param buf input buffer
@@ -68,7 +69,7 @@ public abstract class BufferFrame {
 
     /**
      * Called when the buffer frame is to be evicted. The frame will not be flushed into disk immediately.
-     * Instead, a background thread will later reclaim the evicted frame and flush the data.
+     * Instead, a background thread will later to reclaim the evicted frame and flush the data.
      * */
     abstract void invalidate();
 
