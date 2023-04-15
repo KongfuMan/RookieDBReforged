@@ -16,7 +16,7 @@ import static org.csfundamental.database.storage.DiskSpaceManager.PAGE_SIZE;
  * One partition is backed by on OS file.
  * The methods are not thread-safe. It is the caller's responsibility to use partLock to protect critical section.
  * */
-public class Partition implements Closeable {
+public class Partition implements AutoCloseable {
     public static final int DATA_PAGES_PER_PARTITION = HEADER_PAGES_PER_MASTER * DATA_PAGES_PER_HEADER;
     ReentrantLock partLock;
     final int partNum;

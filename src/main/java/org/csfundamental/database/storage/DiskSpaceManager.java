@@ -8,6 +8,9 @@ public interface DiskSpaceManager extends AutoCloseable {
     long INVALID_PAGE_NUM = -1L;
     long MAX_PAGE_COUNT = 10000000000L;
 
+    @Override
+    void close();
+
     /**
      * Allocate a new partition with number incremented by one from current maximum partition number
      *

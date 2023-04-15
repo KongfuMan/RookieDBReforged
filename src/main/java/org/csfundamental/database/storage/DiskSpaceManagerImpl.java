@@ -269,7 +269,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close(){
         for (int partNum : partMap.keySet()){
             try{
                 Partition part = partMap.get(partNum);
