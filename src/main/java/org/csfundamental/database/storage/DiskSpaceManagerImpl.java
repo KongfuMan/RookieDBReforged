@@ -270,8 +270,13 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
 
     @Override
     public void close() throws IOException {
-        for (Partition part : partMap.values()){
-            part.close();
+        for (int partNum : partMap.keySet()){
+            try{
+                Partition part = partMap.get(partNum);
+                part.close();
+            }catch (IOException e){
+                throw new PageException("could not close partition " + partNum + ": " + e.getMessage());
+            }
         }
     }
 }
