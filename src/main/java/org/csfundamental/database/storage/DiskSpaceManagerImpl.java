@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -37,7 +38,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         // TODO: create partition from files under the this.dir
         File f = new File(dir);
         if (f.exists()){
-            for (File part : f.listFiles()){
+            for (File part : Objects.requireNonNull(f.listFiles())){
                 String fileName = part.getName();
                 try{
                     int partNum = Integer.parseInt(fileName);
@@ -102,7 +103,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
                 throw new RuntimeException("Failed to delete the partition file.");
             }
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Free a partition failed with partition number " + partNum + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
@@ -130,7 +131,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             int pageNum = part.allocPage();
             return DiskSpaceManager.getVirtualPageNum(partNum, pageNum);
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Allocate a new page failed at partition " + part.partNum + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
@@ -157,7 +158,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             part.allocPage(pageNum);
             return page;
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Allocate a new page failed with page number " + page + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
@@ -178,7 +179,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         try{
             part.freePage(pageNum);
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Free a page failed with page number" + page + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
@@ -202,7 +203,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             part.partLock.lock();
             part.readPage(pageNum, buf);
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Read page failed with page number " + page + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
@@ -226,7 +227,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             part.partLock.lock();
             part.writePage(pageNum, buf);
         }catch (IOException e){
-            throw new PageException("");
+            throw new PageException("Write a page failed with page number " + page + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();
