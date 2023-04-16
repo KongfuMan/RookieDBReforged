@@ -1,16 +1,19 @@
 package org.csfundamental.database.buffer;
 
+/**
+ * In-memory data structure that represents the loaded on-disk page.
+ * */
 public abstract class BufferFrame {
     Object tag = null;
 
     /**
-     * reference counter.
+     * referenced counter.
      * The frame CANNOT be swapped out until the counter is zero.
      * */
     private int pinCount = 0;
 
     /**
-     * Pin buffer frame. Called before read/write data to this frame
+     * Pin buffer frame. Called before accessing data of this frame
      * It cannot be evicted from cache while pinned.
      * This method is paired with unpin.
      */
@@ -22,7 +25,7 @@ public abstract class BufferFrame {
     }
 
     /**
-     * Unpin buffer frame. Called after read/write the frame
+     * Unpin buffer frame. Called after accessing data of this frame
      */
     protected void unpin() {
         if (!isPinned()) {
