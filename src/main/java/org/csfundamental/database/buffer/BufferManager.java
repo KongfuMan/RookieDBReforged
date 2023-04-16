@@ -3,8 +3,6 @@ package org.csfundamental.database.buffer;
 import org.csfundamental.database.storage.DiskSpaceManager;
 import org.csfundamental.database.storage.PageException;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
@@ -13,10 +11,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 
 /**
+ * Implementation of a buffer manager, with configurable caching policies.
+ * Data is stored in page-sized on-disk byte arrays, and returned in a Frame object specific
+ * to the page loaded (evicting and loading a new page into the frame will result in
+ * a new Frame object, with the same underlying byte array).
+ *
  * Buffer manager follows the STEAL & NO-FORCE policy of ARIES recovery protocol for better performance.
- * STEAL: the frame can be swapped out before the trx commit.
- * NO-FORCE: buffer frame updated by the trx will not be flushed immediately after
- *           trx commit.
+ * STEAL:  Frames updated by a TRX can be swapped out before the TRX commit.
+ * NO-FORCE: TRX commit will NOT force the Frames updated by the trx to be flushed immediately.
  * */
 public class BufferManager implements AutoCloseable {
     // Reserve 36 bytes on each page to book keep info for recovery
@@ -29,15 +31,14 @@ public class BufferManager implements AutoCloseable {
     private final CacheStrategy cacheStrategy;
     private final ReentrantLock managerLock;
     private long numIO;
-
-    private final Set<BufferFrame> inValidFrames;
+    private final Set<BufferFrame> invalidFrames;
 
     public BufferManager(DiskSpaceManager diskSpaceManager, int capacity){
         this.diskSpaceManager = diskSpaceManager;
         this.cacheStrategy = new LRUCacheStrategy(capacity);
         this.managerLock = new ReentrantLock();
         this.numIO = 0;
-        this.inValidFrames = new HashSet<>();
+        this.invalidFrames = new HashSet<>();
     }
 
     /**
@@ -111,7 +112,7 @@ public class BufferManager implements AutoCloseable {
             evictedFrame.frameLock.lock();
             try{
                 evictedFrame.invalidate();
-                inValidFrames.add(evictedFrame);
+                invalidFrames.add(evictedFrame);
             }finally {
                 evictedFrame.frameLock.unlock();
             }
@@ -227,7 +228,7 @@ public class BufferManager implements AutoCloseable {
         private final long page;
         final ReentrantLock frameLock;
         private boolean dirty;
-        private boolean logPage;
+        private final boolean logPage;
 
         /**
          * Mark if the buffer frame is going to be reclaimed.
@@ -236,6 +237,10 @@ public class BufferManager implements AutoCloseable {
         private boolean isValid;
 
         public Frame(byte[] content, long page){
+            this(content, page, false);
+        }
+
+        public Frame(byte[] content, long page, boolean logPage){
             if (Objects.requireNonNull(content).length != DiskSpaceManager.PAGE_SIZE){
                 throw new IllegalArgumentException("Illegal input byte array");
             }
@@ -244,7 +249,7 @@ public class BufferManager implements AutoCloseable {
             this.dirty = false;
             this.frameLock = new ReentrantLock();
             this.isValid = true;
-            this.logPage = false;
+            this.logPage = logPage;
         }
 
         @Override
@@ -311,7 +316,7 @@ public class BufferManager implements AutoCloseable {
         }
 
         /**
-         * The frame is marked invalid if it is going to be reclaimed from memory.
+         * The frame is marked invalid to be swapped out from memory.
          * As a result, no action is allowed except for unpin.
          * */
         @Override
