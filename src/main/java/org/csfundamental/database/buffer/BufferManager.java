@@ -92,7 +92,7 @@ public class BufferManager implements AutoCloseable {
         managerLock.lock();
         try{
             if (!diskSpaceManager.pageAllocated(page)){
-                throw new PageException("Page not allocated");
+                throw new PageException("Cannot fetch an unallocated page.");
             }
             newFrame = (Frame)cacheStrategy.get(page);
             if (newFrame != null){
