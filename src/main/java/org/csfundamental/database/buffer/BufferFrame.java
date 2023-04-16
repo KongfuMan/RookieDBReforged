@@ -1,18 +1,23 @@
 package org.csfundamental.database.buffer;
 
-/**
- * Buffer frame represents a loaded on-disk page in memory.
- */
 public abstract class BufferFrame {
     Object tag = null;
+
+    /**
+     * reference counter.
+     * The frame CANNOT be swapped out until the counter is zero.
+     * */
     private int pinCount = 0;
 
     /**
      * Pin buffer frame. Called before read/write data to this frame
-     * It cannot be evicted while pinned.
+     * It cannot be evicted from cache while pinned.
      * This method is paired with unpin.
      */
     protected void pin() {
+        if (!isValid()){
+            throw new IllegalStateException("Cannot pin a invalid frame");
+        }
         ++pinCount;
     }
 
@@ -32,6 +37,14 @@ public abstract class BufferFrame {
     boolean isPinned() {
         return pinCount > 0;
     }
+
+    /**
+     * Mark the frame is to be swapped out. Called by frame evict from cache.
+     * Once marked, no action is allowed to apply on the frame except for unpin
+     * */
+    abstract void invalidate();
+
+    abstract boolean isValid();
 
     /**
      * @return virtual page number of this frame
@@ -66,14 +79,6 @@ public abstract class BufferFrame {
     short getEffectivePageSize() {
         return BufferManager.EFFECTIVE_PAGE_SIZE;
     }
-
-    /**
-     * Called when the buffer frame is to be evicted. The frame will not be flushed into disk immediately.
-     * Instead, a background thread will later to reclaim the evicted frame and flush the data.
-     * */
-    abstract void invalidate();
-
-    abstract boolean isValid();
 
     /**
      * @param pageLSN new pageLSN of the page loaded in this frame
