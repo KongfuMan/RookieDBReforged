@@ -76,9 +76,7 @@ public abstract class BufferFrame {
     /**
      * @return amount of space available to user of the frame
      */
-    short getEffectivePageSize() {
-        return BufferManager.EFFECTIVE_PAGE_SIZE;
-    }
+    abstract short getEffectivePageSize();
 
     /**
      * @param pageLSN new pageLSN of the page loaded in this frame

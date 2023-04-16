@@ -331,6 +331,15 @@ public class BufferManager implements AutoCloseable {
         }
 
         @Override
+        short getEffectivePageSize() {
+            if (logPage) {
+                return DiskSpaceManager.PAGE_SIZE;
+            } else {
+                return BufferManager.EFFECTIVE_PAGE_SIZE;
+            }
+        }
+
+        @Override
         void setPageLSN(long pageLSN) {
         }
 
