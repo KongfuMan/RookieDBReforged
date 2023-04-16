@@ -23,7 +23,9 @@ public class LRUCacheStrategy implements CacheStrategy {
             if (frame == null){
                 throw new IllegalArgumentException("Buffer frame is null");
             }
+            this.page = page;
             this.frame = frame;
+            this.frame.tag = this;
         }
     }
 
