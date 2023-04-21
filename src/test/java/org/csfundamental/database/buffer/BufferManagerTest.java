@@ -8,11 +8,8 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 
 import static org.csfundamental.database.storage.DiskSpaceManager.PAGE_SIZE;
@@ -291,7 +288,7 @@ public class BufferManagerTest {
     }
 
     @Test
-    public void testReadWriteInt(){
+    public void testReadWriteVariousDataType(){
         int partNum = diskSpaceManager.allocPart(1);
         Page page = bufferManager.fetchNewPage(partNum);
         Buffer pageBuffer = page.getPageBuffer();
