@@ -1,5 +1,6 @@
 package org.csfundamental.database.buffer;
 
+import org.csfundamental.database.common.Buffer;
 import org.csfundamental.database.storage.DiskSpaceManager;
 import org.csfundamental.database.storage.MemoryDiskSpaceManager;
 import org.csfundamental.database.storage.PageException;
@@ -287,5 +288,33 @@ public class BufferManagerTest {
     public void testMissingPage() {
         int partNum = diskSpaceManager.allocPart(1);
         bufferManager.fetchPageFrame(DiskSpaceManager.getVirtualPageNum(partNum, 0));
+    }
+
+    @Test
+    public void testReadWriteInt(){
+        int partNum = diskSpaceManager.allocPart(1);
+        Page page = bufferManager.fetchNewPage(partNum);
+        Buffer pageBuffer = page.getPageBuffer();
+
+        Random rand = new Random();
+        int val = rand.nextInt();
+        pageBuffer.putInt(val);
+        int actual = pageBuffer.getInt();
+        Assert.assertEquals(val, actual);
+
+        val = rand.nextInt();
+        pageBuffer.putInt(val);
+        actual = pageBuffer.getInt();
+        Assert.assertEquals(val, actual);
+
+        char ch = 'e';
+        pageBuffer.putChar(ch);
+        char expected = pageBuffer.getChar();
+        Assert.assertEquals(ch, expected);
+
+        float f = rand.nextFloat();
+        pageBuffer.putFloat(f);
+        float actualF = pageBuffer.getFloat();
+        Assert.assertEquals(f, actualF, 0.000000000);
     }
 }

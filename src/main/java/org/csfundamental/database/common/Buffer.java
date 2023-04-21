@@ -1,4 +1,4 @@
-package edu.berkeley.cs186.database.common;
+package org.csfundamental.database.common;
 
 /**
  * Buffers are used to store and sequences of bytes, for example when we want
