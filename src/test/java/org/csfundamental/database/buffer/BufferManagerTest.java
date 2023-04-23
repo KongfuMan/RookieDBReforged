@@ -291,27 +291,23 @@ public class BufferManagerTest {
     public void testReadWriteVariousDataType(){
         int partNum = diskSpaceManager.allocPart(1);
         Page page = bufferManager.fetchNewPage(partNum);
-        Buffer pageBuffer = page.getPageBuffer();
+        Buffer pageBuffer = page.getBuffer();
 
         Random rand = new Random();
-        int val = rand.nextInt();
-        pageBuffer.putInt(val);
-        int actual = pageBuffer.getInt();
-        Assert.assertEquals(val, actual);
-
-        val = rand.nextInt();
-        pageBuffer.putInt(val);
-        actual = pageBuffer.getInt();
-        Assert.assertEquals(val, actual);
-
-        char ch = 'e';
-        pageBuffer.putChar(ch);
-        char expected = pageBuffer.getChar();
-        Assert.assertEquals(ch, expected);
-
+        int val1 = rand.nextInt();
+        int val2 = rand.nextInt();
+        char ch = 'a';
         float f = rand.nextFloat();
-        pageBuffer.putFloat(f);
-        float actualF = pageBuffer.getFloat();
-        Assert.assertEquals(f, actualF, 0.000000000);
+
+        pageBuffer.putInt(val1)
+                .putInt(val2)
+                .putChar(ch)
+                .putFloat(f);
+
+        pageBuffer = page.getBuffer();
+        Assert.assertEquals(val1, pageBuffer.getInt());
+        Assert.assertEquals(val2, pageBuffer.getInt());
+        Assert.assertEquals(ch, pageBuffer.getChar());
+        Assert.assertEquals(f, pageBuffer.getFloat(), 0.000000000);
     }
 }

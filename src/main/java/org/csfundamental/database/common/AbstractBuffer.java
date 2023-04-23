@@ -40,13 +40,13 @@ public abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final char getChar() {
-        ++this.pos;
-        return getChar(this.pos - 1);
+        this.pos += 2;
+        return getChar(this.pos - 2);
     }
 
     @Override
     public final char getChar(int index) {
-        get(bytes, index, 1);
+        get(bytes, index, 2);
         return buf.getChar(0);
     }
 
@@ -133,14 +133,14 @@ public abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final Buffer putChar(char value) {
-        ++pos;
-        return putChar(pos - 1, value);
+        this.pos += 2;
+        return putChar(pos - 2, value);
     }
 
     @Override
     public final Buffer putChar(int index, char value) {
         buf.putChar(0, value);
-        return put(bytes, index, 1);
+        return put(bytes, index, 2);
     }
 
     @Override

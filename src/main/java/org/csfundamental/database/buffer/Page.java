@@ -22,19 +22,24 @@ public class Page {
         this(page.frame);
     }
 
-    public Buffer getPageBuffer(){
+    /**
+     * Gets a Buffer object for more convenient access to the page.
+     *
+     * @return Buffer object over this page
+     */
+    public Buffer getBuffer() {
         return new PageBuffer();
     }
 
     /**
-     * Reads num bytes from offset position into buf.
+     * Reads num bytes from offset position into dst.
      *
      * @param position the offset in the page to read from
      * @param num the number of bytes to read
-     * @param buf the buffer to put the bytes into
+     * @param dst the buffer to put the bytes into
      */
-    private void readBytes(int position, int num, byte[] buf) {
-
+    private void readBytes(int position, int num, byte[] dst) {
+        this.frame.readBytes((short)position, (short)num, dst);
     }
 
     /**
@@ -43,31 +48,25 @@ public class Page {
      * @return a new byte array with all the bytes in the file
      */
     private byte[] readBytes() {
-        return null;
+        byte[] data = new byte[BufferManager.EFFECTIVE_PAGE_SIZE];
+        getBuffer().get(data);
+        return data;
     }
 
     /**
      * Write num bytes from buf at offset position.
      *
      * @param position the offest in the file to write to
-     * @param num the number of bytes to write
-     * @param buf the source for the write
+     * @param len the number of bytes to write
+     * @param src the source for to write
      */
-    private void writeBytes(int position, int num, byte[] buf) {
-
-    }
-
-    /**
-     * Write all the bytes in file.
-     */
-    private void writeBytes(byte[] data) {
-
+    private void writeBytes(int position, int len, byte[] src) {
+        this.frame.writeBytes((short)position, (short)len, src);
     }
 
     public long getPageNum(){
         return frame.getPageNum();
     }
-
 
     /**
      * Implementation of Buffer for the page data. All reads/writes ultimately wrap around
@@ -96,6 +95,7 @@ public class Page {
         @Override
         public Buffer get(byte[] dst, int offset, int length) {
             // TODO(proj4_part2): Update the following line
+//            LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
             Page.this.readBytes(this.offset + offset, length, dst);
             return this;
         }
@@ -111,6 +111,7 @@ public class Page {
         @Override
         public Buffer put(byte[] src, int offset, int length) {
             // TODO(proj4_part2): Update the following line
+//            LockUtil.ensureSufficientLockHeld(lockContext, LockType.NL);
             Page.this.writeBytes(this.offset + offset, length, src);
             return this;
         }
@@ -132,5 +133,5 @@ public class Page {
         public Buffer duplicate() {
             return new PageBuffer(offset, position());
         }
-    }
+    }//    }
 }
