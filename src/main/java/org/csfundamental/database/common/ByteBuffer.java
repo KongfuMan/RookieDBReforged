@@ -1,4 +1,4 @@
-package edu.berkeley.cs186.database.common;
+package org.csfundamental.database.common;
 
 import java.nio.ByteOrder;
 
