@@ -68,6 +68,18 @@ public class Page {
         return frame.getPageNum();
     }
 
+    public void pin(){
+        this.frame.pin();
+    }
+
+    public void unpin(){
+        this.frame.unpin();
+    }
+
+    public void flush(){
+        this.frame.flush();
+    }
+
     /**
      * Implementation of Buffer for the page data. All reads/writes ultimately wrap around
      * Page#readBytes and Page#writeBytes, which delegates work to the buffer manager.
