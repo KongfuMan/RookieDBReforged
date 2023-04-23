@@ -71,6 +71,15 @@ public class Page {
     /**
      * Implementation of Buffer for the page data. All reads/writes ultimately wrap around
      * Page#readBytes and Page#writeBytes, which delegates work to the buffer manager.
+     * Example:
+     * Write:
+     *      Buffer pageBuffer = page.getBuffer();*
+     *      pageBuffer.putInt(8).putChar('a').putFloat(1.0f);
+     * Read: should follow the same order as write.
+     *      pageBuffer = page.getBuffer(); //create a new byte buffer associated with same page
+     *      pageBuffer.getInt();  // return 8
+     *      pageBuffer.getChar(); // return 'a'
+     *      pageBuffer.getFloat(); // 1.0f;
      */
     private class PageBuffer extends AbstractBuffer {
         private int offset;
