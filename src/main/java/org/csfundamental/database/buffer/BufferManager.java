@@ -42,15 +42,15 @@ public class BufferManager implements AutoCloseable {
     }
 
     /**
-     * Fetches a buffer frame with data for the specified page. Reuses existing
-     * buffer frame if page already loaded in memory. Pins the buffer frame.
-     * Cannot be used outside the package.
+     * Fetches a buffer frame associated with an allocated page.
+     * The buffer frame is pinned before return to caller. Caller is responsible for
+     * unpin the frame after access.
      *
-     * @param page The virtual page number
-     * @return buffer frame with specified page loaded
+     * @param pageNum The virtual page number
+     * @return pinned buffer frame with specified page loaded
      */
-    BufferFrame fetchPageFrame(long page) {
-        return fetchPageFrame(page, false);
+    BufferFrame fetchPageFrame(long pageNum) {
+        return fetchPageFrame(pageNum, false);
     }
 
     /**
@@ -64,37 +64,42 @@ public class BufferManager implements AutoCloseable {
     }
 
     /**
-     * Fetches a buffer frame for a new page. Pins the buffer frame.
-     * Cannot be used outside the package.
+     * Fetches a buffer frame for a new page within specified partition.
      *
      * @param partNum partition number for new page
-     * @return buffer frame for the new page
+     * @return pinned buffer frame for the new page
      */
     BufferFrame fetchNewPageFrame(int partNum) {
         long page = diskSpaceManager.allocPage(partNum);
         return fetchPageFrame(page, true);
     }
 
+    /**
+     * Fetches a page object for a new on disk page within specified partition.
+     *
+     * @param partNum partition number for new page
+     * @return pinned buffer frame for the new page
+     */
     public Page fetchNewPage(int partNum) {
         long page = diskSpaceManager.allocPage(partNum);
         return this.frameToPage(this.fetchPageFrame(page, true));
     }
 
     /**
-     * Fetches a buffer frame for the specified page.
-     * @param page The virtual page number
+     * Fetches a buffer frame for an allocated page.
+     * @param pageNum The virtual page number.
      * @param newAllocated indicating whether the page is newly allocated one, s.t. no load action needed.
      * @return buffer frame which must be pinned to prevent being swapped out.
      */
-    private BufferFrame fetchPageFrame(long page, boolean newAllocated) {
+    private BufferFrame fetchPageFrame(long pageNum, boolean newAllocated) {
         Frame newFrame;
         Frame evictedFrame;
         managerLock.lock();
         try{
-            if (!diskSpaceManager.pageAllocated(page)){
+            if (!diskSpaceManager.pageAllocated(pageNum)){
                 throw new PageException("Cannot fetch an unallocated page.");
             }
-            newFrame = (Frame)cacheStrategy.get(page);
+            newFrame = (Frame)cacheStrategy.get(pageNum);
             if (newFrame != null){
                 // cache hit, then just return the frame
                 newFrame.pin();
@@ -102,8 +107,8 @@ public class BufferManager implements AutoCloseable {
             }
             // cache miss, either because the frame was previously swapped out or this is a newly allocated page
             byte[] data = new byte[DiskSpaceManager.PAGE_SIZE];
-            newFrame = new Frame(data, page);
-            evictedFrame = (Frame)cacheStrategy.put(page,newFrame);
+            newFrame = new Frame(data, pageNum);
+            evictedFrame = (Frame)cacheStrategy.put(pageNum,newFrame);
         }finally {
             managerLock.unlock();
         }
@@ -126,7 +131,7 @@ public class BufferManager implements AutoCloseable {
                 return newFrame;
             }
             // read data into buffer frame from disk;
-            diskSpaceManager.readPage(page, newFrame.content);
+            diskSpaceManager.readPage(pageNum, newFrame.content);
             this.incrementNumIO();
             return newFrame;
         }finally {
