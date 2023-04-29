@@ -22,6 +22,14 @@ public class Page {
         this(page.frame);
     }
 
+    @Override
+    public boolean equals(Object b) {
+        if (!(b instanceof Page)) {
+            return false;
+        }
+        return ((Page) b).getPageNum() == getPageNum();
+    }
+
     /**
      * Gets a Buffer object for more convenient access to the page.
      *
