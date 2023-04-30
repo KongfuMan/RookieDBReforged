@@ -230,7 +230,7 @@ public class BufferManager implements AutoCloseable {
 
     class Frame extends BufferFrame {
         private byte[] content;
-        private final long page;
+        private final long pageNum;
         final ReentrantLock frameLock;
         private boolean dirty;
         private final boolean logPage;
@@ -241,16 +241,16 @@ public class BufferManager implements AutoCloseable {
          * */
         private boolean isValid;
 
-        public Frame(byte[] content, long page){
-            this(content, page, false);
+        public Frame(byte[] content, long pageNum){
+            this(content, pageNum, false);
         }
 
-        public Frame(byte[] content, long page, boolean logPage){
+        public Frame(byte[] content, long pageNum, boolean logPage){
             if (Objects.requireNonNull(content).length != DiskSpaceManager.PAGE_SIZE){
                 throw new IllegalArgumentException("Illegal input byte array");
             }
             this.content = content;
-            this.page = page;
+            this.pageNum = pageNum;
             this.dirty = false;
             this.frameLock = new ReentrantLock();
             this.isValid = true;
@@ -259,7 +259,7 @@ public class BufferManager implements AutoCloseable {
 
         @Override
         long getPageNum() {
-            return page;
+            return pageNum;
         }
 
         @Override
@@ -270,7 +270,7 @@ public class BufferManager implements AutoCloseable {
                 if (!this.dirty){
                     return;
                 }
-                BufferManager.this.diskSpaceManager.writePage(this.page, this.content);
+                BufferManager.this.diskSpaceManager.writePage(this.pageNum, this.content);
                 BufferManager.this.incrementNumIO();
                 this.dirty = false;
             }finally {
