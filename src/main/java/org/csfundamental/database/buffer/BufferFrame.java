@@ -1,5 +1,7 @@
 package org.csfundamental.database.buffer;
 
+import org.csfundamental.database.storage.PageException;
+
 /**
  * In-memory data structure that represents the loaded on-disk page.
  * */
@@ -19,7 +21,7 @@ public abstract class BufferFrame {
      */
     protected void pin() {
         if (!isValid()){
-            throw new IllegalStateException("Cannot pin a invalid frame");
+            throw new PageException("Cannot pin a invalid frame");
         }
         ++pinCount;
     }
