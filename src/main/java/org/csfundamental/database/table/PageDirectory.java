@@ -160,7 +160,8 @@ public class PageDirectory implements BacktrackingIterable<Page> {
             super(page);
 
             Buffer buffer = super.getBuffer();
-            if (buffer.getInt() != pageDirectoryId) {
+            int actualPageDirectoryId = buffer.getInt();
+            if (actualPageDirectoryId != pageDirectoryId) {
                 page.unpin();
                 throw new PageException("data page directory id does not match");
             }
@@ -254,7 +255,8 @@ public class PageDirectory implements BacktrackingIterable<Page> {
                     Buffer tempHeaderBuf = ByteBuffer.wrap(buf);
                     // invalid page, initialize empty header page
                     if (firstHeader){
-                        pageDirectoryId = new Random().nextInt();
+                        Random rand = new Random();
+                        pageDirectoryId = rand.nextInt(Integer.MAX_VALUE - 1) + 1;
                     }
                     nextPageNum = DiskSpaceManager.INVALID_PAGE_NUM;
                     tempHeaderBuf.position(0).put(HEADER_ALLOCATED)
@@ -289,12 +291,12 @@ public class PageDirectory implements BacktrackingIterable<Page> {
             this.page.pin();
             try{
                 // buffer associated with the header page
-                Buffer pageBuffer = this.page.getBuffer();
-                pageBuffer.position(HEADER_HEADER_SIZE);
+                Buffer headerPageBuffer = this.page.getBuffer();
+                headerPageBuffer.position(HEADER_HEADER_SIZE);
 
                 short unusedSlot = -1;
                 for(int i = 0; i < HEADER_ENTRY_COUNT; i++){
-                    DataPageEntry dataPageEntry = DataPageEntry.fromBytes(pageBuffer);
+                    DataPageEntry dataPageEntry = DataPageEntry.fromBytes(headerPageBuffer);
                     if (!dataPageEntry.isValid()){
                         if (unusedSlot == -1){
                             unusedSlot = (short)i;
@@ -305,9 +307,9 @@ public class PageDirectory implements BacktrackingIterable<Page> {
                     if (dataPageEntry.freeSpace >= requiredSpace){
                         // use this page: pre-deduct the free space
                         dataPageEntry.freeSpace -= requiredSpace;
-                        pageBuffer.position(pageBuffer.position() - DATA_HEADER_SIZE);
+                        headerPageBuffer.position(headerPageBuffer.position() - DATA_HEADER_SIZE);
                         // overwrite this data page entry
-                        dataPageEntry.toBytes(pageBuffer);
+                        dataPageEntry.toBytes(headerPageBuffer);
                         return bufferManager.fetchPage(dataPageEntry.pagNum);
                     }
                 }
@@ -317,8 +319,8 @@ public class PageDirectory implements BacktrackingIterable<Page> {
                     // allocate a new page
                     Page dataPage = bufferManager.fetchNewPage(partNum);
                     DataPageEntry dataPageEntry = new DataPageEntry(dataPage.getPageNum(), (short)(EFFECTIVE_PAGE_SIZE - requiredSpace));
-                    pageBuffer.position(HEADER_HEADER_SIZE + unusedSlot * DATA_HEADER_SIZE);
-                    dataPageEntry.toBytes(pageBuffer);
+                    headerPageBuffer.position(HEADER_HEADER_SIZE + unusedSlot * DATA_HEADER_SIZE);
+                    dataPageEntry.toBytes(headerPageBuffer);
 
                     dataPage.getBuffer().putInt(pageDirectoryId).putInt(headerOffset).putShort(unusedSlot);
                     ++this.numDataPages;
