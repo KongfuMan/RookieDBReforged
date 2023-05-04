@@ -2,6 +2,7 @@ package org.csfundamental.database.table;
 
 import org.csfundamental.database.buffer.BufferManager;
 import org.csfundamental.database.buffer.Page;
+import org.csfundamental.database.common.Buffer;
 import org.csfundamental.database.storage.DiskSpaceManager;
 import org.csfundamental.database.storage.MemoryDiskSpaceManager;
 import org.csfundamental.database.storage.PageException;
@@ -13,6 +14,7 @@ import org.junit.function.ThrowingRunnable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -57,6 +59,30 @@ public class PageDirectoryTest {
         assertEquals(p2, p3);
         assertEquals(p3, p5);
         assertNotEquals(p4, p5);
+    }
+
+    @Test
+    public void testFetchPageWithSpaceWithTwoPageDirectories(){
+        Random rand = new Random();
+
+        this.pageDirectory = new PageDirectory(bufferManager, partNum, firstHeaderPageNum);
+        short fullPageSize = pageDirectory.getEffectivePageSize();
+        byte[] expected = new byte[fullPageSize - PageDirectory.DATA_HEADER_SIZE];
+        rand.nextBytes(expected);
+
+        Page dataPage = pageDirectory.fetchPageWithSpace(fullPageSize);
+        Buffer dataBuffer = dataPage.getBuffer();
+        dataBuffer.position(PageDirectory.DATA_HEADER_SIZE);
+        dataBuffer.put(expected);
+        dataPage.flush();
+
+        PageDirectory newPageDir = new PageDirectory(bufferManager, partNum, firstHeaderPageNum);
+        Page newDataPage = newPageDir.fetchPage(dataPage.getPageNum());
+        Buffer newDataBuffer = newDataPage.getBuffer();
+        newDataBuffer.position(PageDirectory.DATA_HEADER_SIZE);
+        byte[] actual = new byte[fullPageSize - PageDirectory.DATA_HEADER_SIZE];
+        newDataBuffer.get(actual);
+        Assert.assertArrayEquals(expected, actual);
     }
 
     @Test

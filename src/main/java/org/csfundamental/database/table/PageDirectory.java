@@ -47,14 +47,14 @@ public class PageDirectory implements BacktrackingIterable<Page> {
      * @param bufferManager buffer manager
      * @param partNum partition to allocate new header pages in (can be different partition
      *                from data pages)
-     * @param pageNum first header page of page directory
+     * @param firstHeaderPageNum first header page of page directory
 //     * @param emptyPageMetadataSize size of metadata on an empty page
 //     * @param lockContext lock context of this heap file
      */
-    public PageDirectory(BufferManager bufferManager, int partNum, long pageNum) {
+    public PageDirectory(BufferManager bufferManager, int partNum, long firstHeaderPageNum) {
         this.bufferManager = bufferManager;
         this.partNum = partNum;
-        this.firstHeader = new HeaderPage(pageNum, 0, true);
+        this.firstHeader = new HeaderPage(firstHeaderPageNum, 0, true);
     }
 
     public short getEffectivePageSize() {
