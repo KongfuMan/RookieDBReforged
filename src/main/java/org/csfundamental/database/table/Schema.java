@@ -70,6 +70,10 @@ public class Schema {
         return size;
     }
 
+    public List<Type> getFieldTypes(){
+        return fieldTypes;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o == this) return true;

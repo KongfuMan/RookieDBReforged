@@ -29,10 +29,6 @@ public class Type{
         return new Type(TypeId.STRING, len);
     }
 
-    public static Type fromByteArray(int len){
-        return new Type(TypeId.BYTE_ARRAY, len);
-    }
-
     private Type(int typeId, int sizeInBytes){
         this(TypeId.fromInt(typeId), sizeInBytes);
     }
@@ -79,7 +75,7 @@ public class Type{
         return buf.array();
     }
 
-    public TypeId typeId(){
+    public TypeId getTypeId(){
         return typeId;
     }
 
