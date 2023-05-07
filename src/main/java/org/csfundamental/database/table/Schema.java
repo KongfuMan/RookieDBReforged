@@ -21,10 +21,11 @@ public class Schema {
         this.sizeInBytes = 0;
     }
 
-    public void add(String fieldName, Type fieldType){
+    public Schema add(String fieldName, Type fieldType){
         this.fieldNames.add(fieldName);
         this.fieldTypes.add(fieldType);
         this.sizeInBytes +=  fieldType.getSizeInBytes();
+        return this;
     }
 
     public static Schema fromBytes(Buffer buf){

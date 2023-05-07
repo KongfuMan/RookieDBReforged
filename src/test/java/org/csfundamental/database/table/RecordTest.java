@@ -37,6 +37,7 @@ public class RecordTest {
         schema.add("name", Type.fromString(256));
         schema.add("weight", Type.fromFloat());
         schema.add("gender", Type.fromBool());
+        schema.add("content", Type.fromByteArray(256));
 
         short fullPageSize = this.pageDirectory.getEffectivePageSize();
         Page page = this.pageDirectory.fetchPageWithSpace(fullPageSize);
@@ -51,7 +52,7 @@ public class RecordTest {
         Page page = this.pageDirectory.fetchPageWithSpace(fullPageSize);
         Buffer pageBuffer = page.getBuffer().position(PageDirectory.DATA_HEADER_SIZE);
 
-        byte[] content = new byte[128];
+        byte[] content = new byte[256];
         Random rand = new Random();
         rand.nextBytes(content);
 
@@ -61,6 +62,7 @@ public class RecordTest {
         dataBoxes.add(new StringDataBox("Alice", 256));
         dataBoxes.add(new FloatDataBox(56.0F));
         dataBoxes.add(new BoolDataBox(true));
+        dataBoxes.add(new ByteArrayDataBox(content, 256));
         Record record = new Record(dataBoxes);
         pageBuffer.put(record.toBytes(this.schema));
         page.flush();

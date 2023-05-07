@@ -42,6 +42,12 @@ public abstract class DataBox {
                 buf.get(bytes);
                 return new StringDataBox(new String(bytes), size);
             }
+            case BYTE_ARRAY -> {
+                int size = type.getSizeInBytes();
+                byte[] bytes = new byte[size];
+                buf.get(bytes);
+                return new ByteArrayDataBox(bytes, size);
+            }
             default -> {
                 String err = String.format("Unhandled TypeId %s.", type.getTypeId().toString());
                 throw new IllegalArgumentException(err);

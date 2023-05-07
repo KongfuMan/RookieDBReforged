@@ -38,6 +38,7 @@ public class SchemaTest {
         expectedSchema.add("last name", Type.fromString(256));
         expectedSchema.add("weight", Type.fromFloat());
         expectedSchema.add("gender", Type.fromBool());
+        expectedSchema.add("gender", Type.fromByteArray(256));
 
         short fullPageSize = this.pageDirectory.getEffectivePageSize();
         Page page = this.pageDirectory.fetchPageWithSpace(fullPageSize);
