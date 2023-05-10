@@ -31,4 +31,21 @@ public class IntDataBox extends DataBox{
         buf.putInt(getInt());
         return buf.array();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof IntDataBox)) {
+            return false;
+        }
+        IntDataBox i = (IntDataBox) o;
+        return this.value == i.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.valueOf(value).hashCode();
+    }
 }

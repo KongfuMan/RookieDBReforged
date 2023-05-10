@@ -25,4 +25,21 @@ public class BoolDataBox extends DataBox{
         buf.put((byte)(value ? 1 : 0));
         return buf.array();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof BoolDataBox)) {
+            return false;
+        }
+        BoolDataBox b = (BoolDataBox) o;
+        return this.value == b.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Boolean.valueOf(value).hashCode();
+    }
 }

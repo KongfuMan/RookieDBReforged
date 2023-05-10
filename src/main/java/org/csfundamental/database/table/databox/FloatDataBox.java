@@ -25,4 +25,21 @@ public class FloatDataBox extends DataBox{
         buf.putFloat(value);
         return buf.array();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof FloatDataBox)) {
+            return false;
+        }
+        FloatDataBox f = (FloatDataBox) o;
+        return this.value == f.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Float.valueOf(value).hashCode();
+    }
 }

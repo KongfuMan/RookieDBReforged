@@ -1,5 +1,6 @@
 package org.csfundamental.database.table;
 
+import org.csfundamental.database.TestUtils;
 import org.csfundamental.database.buffer.BufferManager;
 import org.csfundamental.database.buffer.Page;
 import org.csfundamental.database.common.Buffer;
@@ -31,13 +32,7 @@ public class RecordTest {
         this.pageDirectory = new PageDirectory(bufferManager, partNum, firstHeaderPageNum);
 
         //create the schema
-        schema = new Schema();
-        schema.add("id", Type.fromLong());
-        schema.add("age", Type.fromInt());
-        schema.add("name", Type.fromString(256));
-        schema.add("weight", Type.fromFloat());
-        schema.add("gender", Type.fromBool());
-        schema.add("content", Type.fromByteArray(256));
+        schema = TestUtils.createSchemaWithAllTypes();
 
         short fullPageSize = this.pageDirectory.getEffectivePageSize();
         Page page = this.pageDirectory.fetchPageWithSpace(fullPageSize);
@@ -56,14 +51,7 @@ public class RecordTest {
         Random rand = new Random();
         rand.nextBytes(content);
 
-        List<DataBox> dataBoxes = new ArrayList<>();
-        dataBoxes.add(new LongDataBox(0L));
-        dataBoxes.add(new IntDataBox(20));
-        dataBoxes.add(new StringDataBox("Alice", 256));
-        dataBoxes.add(new FloatDataBox(56.0F));
-        dataBoxes.add(new BoolDataBox(true));
-        dataBoxes.add(new ByteArrayDataBox(content, 256));
-        Record record = new Record(dataBoxes);
+        Record record = TestUtils.createRecordWithAllTypes();
         pageBuffer.put(record.toBytes(this.schema));
         page.flush();
 
@@ -71,6 +59,6 @@ public class RecordTest {
         Page newPage = newPageDir.fetchPage(page.getPageNum());
         Buffer newBuf = newPage.getBuffer().position(PageDirectory.DATA_HEADER_SIZE);
         Record actualRecord = Record.fromBytes(newBuf, schema);
-        Assert.assertArrayEquals(record.toBytes(schema), actualRecord.toBytes(schema));
+        Assert.assertEquals(actualRecord, record);
     }
 }

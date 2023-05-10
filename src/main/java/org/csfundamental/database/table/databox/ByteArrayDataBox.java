@@ -1,8 +1,10 @@
 package org.csfundamental.database.table.databox;
 
+import java.util.Arrays;
+
 public class ByteArrayDataBox extends DataBox{
-    private byte[] values;
-    private int size;
+    private final byte[] values;
+    private final int size;
 
     public ByteArrayDataBox(byte[] values, int size){
         if (values.length != size){
@@ -25,5 +27,17 @@ public class ByteArrayDataBox extends DataBox{
     @Override
     public byte[] toBytes() {
         return values;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ByteArrayDataBox other)) return false;
+        return Arrays.equals(this.values, other.values);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(values);
     }
 }

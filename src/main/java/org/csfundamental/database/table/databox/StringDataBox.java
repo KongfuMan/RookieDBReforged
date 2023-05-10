@@ -39,4 +39,17 @@ public class StringDataBox extends DataBox {
         }
         return buf.array();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof StringDataBox)) return false;
+        StringDataBox other = (StringDataBox) o;
+        return this.value.equals(other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }

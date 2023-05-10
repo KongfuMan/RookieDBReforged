@@ -21,6 +21,13 @@ public class Schema {
         this.sizeInBytes = 0;
     }
 
+    public Schema(List<String> fieldNames, List<Type> fieldTypes){
+        assert fieldNames.size() == fieldTypes.size();
+        assert fieldNames.size() > 0;
+        this.fieldNames = fieldNames;
+        this.fieldTypes = fieldTypes;
+    }
+
     public Schema add(String fieldName, Type fieldType){
         this.fieldNames.add(fieldName);
         this.fieldTypes.add(fieldType);
@@ -47,7 +54,14 @@ public class Schema {
     //   2. the field's name as String
     //   3. and the field's type(fixed size: 8 ybtes).
     public byte[] toBytes(){
-        ByteBuffer buf = ByteBuffer.allocate(getSizeInBytes());
+        int size = Integer.BYTES; // number of fields
+        for (int i = 0; i < fieldNames.size(); i++){
+            size += Integer.BYTES; // size in bytes of each field name.
+            size += fieldNames.get(i).length();
+            size += fieldTypes.get(i).getSizeInBytes();
+        }
+
+        ByteBuffer buf = ByteBuffer.allocate(size);
         buf.putInt(fieldNames.size());
         for (int i = 0; i < fieldNames.size(); i++)
         {
@@ -61,14 +75,7 @@ public class Schema {
     }
 
     public int getSizeInBytes(){
-        int count = fieldNames.size();
-        int size = Integer.BYTES; // number of fields
-        for (int i = 0; i < count; i++){
-            size += Integer.BYTES; // number of chars of field name string.
-            size += fieldNames.get(i).length();
-            size += fieldTypes.get(i).getSizeInBytes();
-        }
-        return size;
+        return sizeInBytes;
     }
 
     public List<Type> getFieldTypes(){

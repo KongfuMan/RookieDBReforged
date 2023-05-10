@@ -25,4 +25,21 @@ public class LongDataBox extends DataBox{
         buf.putLong(value);
         return buf.array();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof LongDataBox)) {
+            return false;
+        }
+        LongDataBox l = (LongDataBox) o;
+        return this.value == l.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.valueOf(value).hashCode();
+    }
 }

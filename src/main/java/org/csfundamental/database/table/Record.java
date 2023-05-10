@@ -40,4 +40,22 @@ public class Record {
         }
         return buf.array();
     }
+
+    public int size(){
+        return dataBoxes.size();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) return true;
+        if (o == null) return false;
+        if (!(o instanceof Record)) return false;
+        Record r = (Record) o;
+        return dataBoxes.equals(r.dataBoxes);
+    }
+
+    @Override
+    public int hashCode() {
+        return dataBoxes.hashCode();
+    }
 }

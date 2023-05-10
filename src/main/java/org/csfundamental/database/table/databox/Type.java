@@ -3,6 +3,7 @@ package org.csfundamental.database.table.databox;
 import org.csfundamental.database.common.Buffer;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
 public class Type{
     TypeId typeId;
@@ -85,5 +86,26 @@ public class Type{
 
     public int getSizeInBytes(){
         return sizeInBytes;
+    }
+
+    public boolean verify(DataBox dataBox){
+        return dataBox.getTypeId() == typeId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (!(o instanceof Type)) {
+            return false;
+        }
+        Type t = (Type) o;
+        return typeId.equals(t.typeId) && sizeInBytes == t.sizeInBytes;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeId, sizeInBytes);
     }
 }
