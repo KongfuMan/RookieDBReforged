@@ -197,10 +197,10 @@ public abstract class TransactionContext implements AutoCloseable {
 
     // Statistics //////////////////////////////////////////////////////////////
 
-    /**
-     * @param tableName name of table to get stats of
-     * @return TableStats object of the table
-     */
+//    /**
+//     * @param tableName name of table to get stats of
+//     * @return TableStats object of the table
+//     */
 //    public abstract TableStats getStats(String tableName);
 
     /**

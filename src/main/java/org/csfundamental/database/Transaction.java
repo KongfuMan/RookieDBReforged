@@ -37,7 +37,7 @@ public abstract class Transaction implements AutoCloseable {
     /**
      * Executes a statement (e.g. SELECT, UPDATE, INSERT, etc...)
      */
-//    public abstract Optional<QueryPlan> execute(String statement);
+    public abstract Optional<QueryPlan> execute(String statement);
 
     /**
      * @return transaction number
