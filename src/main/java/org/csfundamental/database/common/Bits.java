@@ -24,7 +24,7 @@ public class Bits {
     }
 
     /**
-     * Get the ith bit of a byte array where the 0th bit is the most significat
+     * Get the ith bit of a byte array where the 0th bit is the most significant
      * bit of the first byte. Some examples:
      *
      *   - getBit(new byte[]{0b10000000, 0b00000000}, 0) == ONE
@@ -92,5 +92,16 @@ public class Bits {
             count += countBits(b);
         }
         return count;
+    }
+
+    public static int indexOfFirstZeroBit(byte[] bytes){
+        for (int i = 0; i < bytes.length; i++){
+            for (int j = 0; j < Byte.SIZE; j++){
+                if (getBit(bytes[i], j) == Bit.ZERO){
+                    return i * Byte.SIZE + j;
+                }
+            }
+        }
+        return -1;
     }
 }

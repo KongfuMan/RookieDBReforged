@@ -2,13 +2,16 @@ package org.csfundamental.database.table;
 
 import org.csfundamental.database.DatabaseException;
 import org.csfundamental.database.Transaction;
+import org.csfundamental.database.TransactionContext;
 import org.csfundamental.database.buffer.BufferManager;
 import org.csfundamental.database.buffer.Page;
 import org.csfundamental.database.common.Bits;
 import org.csfundamental.database.common.Buffer;
+import org.csfundamental.database.common.PredicateOperator;
 import org.csfundamental.database.common.iterator.BacktrackingIterable;
 import org.csfundamental.database.common.iterator.BacktrackingIterator;
 import org.csfundamental.database.common.iterator.IndexBacktrackingIterator;
+import org.csfundamental.database.query.QueryPlan;
 import org.csfundamental.database.table.databox.DataBox;
 
 import java.util.Iterator;
@@ -296,7 +299,6 @@ public class Table implements BacktrackingIterable<Record> {
     }
 
     public class TransactionImpl extends Transaction{
-
         @Override
         public long getTransNum() {
             return 0;
@@ -333,7 +335,12 @@ public class Table implements BacktrackingIterable<Record> {
         }
 
         @Override
-        public void insert(String tableName, Record record) {
+        public QueryPlan query(String tableName, String alias) {
+            return null;
+        }
+
+        @Override
+        public void insert(String tableName, java.lang.Record record) {
 
         }
 
@@ -343,7 +350,22 @@ public class Table implements BacktrackingIterable<Record> {
         }
 
         @Override
-        public void update(String tableName, String targetColumnName, Function<Record, DataBox> expr, Function<Record, DataBox> cond) {
+        public void update(String tableName, String targetColumnName, UnaryOperator<DataBox> targetValue, String predColumnName, PredicateOperator predOperator, DataBox predValue) {
+
+        }
+
+        @Override
+        public void update(String tableName, String targetColumnName, Function<java.lang.Record, DataBox> expr, Function<java.lang.Record, DataBox> cond) {
+
+        }
+
+        @Override
+        public void delete(String tableName, String predColumnName, PredicateOperator predOperator, DataBox predValue) {
+
+        }
+
+        @Override
+        public void delete(String tableName, Function<java.lang.Record, DataBox> cond) {
 
         }
 
@@ -367,10 +389,10 @@ public class Table implements BacktrackingIterable<Record> {
             return null;
         }
 
-//        @Override
-//        public TransactionContext getTransactionContext() {
-//            return null;
-//        }
+        @Override
+        public TransactionContext getTransactionContext() {
+            return null;
+        }
 
         @Override
         protected void startCommit() {
