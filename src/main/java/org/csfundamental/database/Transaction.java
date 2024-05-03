@@ -68,7 +68,7 @@ public abstract class Transaction implements AutoCloseable {
      * This is the default way a transaction ends.
      */
     public final void commit() {
-        if (status != Status.RUNNING) {
+        if (this.getStatus() != Status.RUNNING) {
             throw new IllegalStateException("transaction not in running state, cannot commit");
         }
         startCommit();
@@ -171,7 +171,7 @@ public abstract class Transaction implements AutoCloseable {
      * @param tableName name of table to select from
      * @return new query plan
      */
-//    public abstract QueryPlan query(String tableName);
+    public abstract QueryPlan query(String tableName);
 
     /**
      * Returns a QueryPlan selecting from tableName. Equivalent to

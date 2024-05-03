@@ -56,4 +56,47 @@ public abstract class DataBox {
     }
 
     public abstract byte[] toBytes();
+
+    public static DataBox fromString(Type type, String s) {
+        String raw = s;
+        s = s.toLowerCase().trim();
+        switch (type.getTypeId()) {
+            case BOOL: return new BoolDataBox(s.equals("true"));
+            case INT: return new IntDataBox(Integer.parseInt(s));
+            case LONG: return new LongDataBox(Long.parseLong(s));
+            case FLOAT: return new FloatDataBox(Float.parseFloat(s));
+            case STRING: return new StringDataBox(raw);
+            default: throw new RuntimeException("Unreachable code");
+        }
+    }
+
+    /**
+     * @param o some object
+     * @return if the passed in object was already DataBox then we return the
+     * object after a cast. Otherwise, if the object was an instance of a
+     * wrapper type for one of the primitives we support, then return a DataBox
+     * of the proper type wrapping the object. Useful for making the record
+     * constructor and QueryPlan methods more readable.
+     *
+     * Examples:
+     * - DataBox.fromObject(186) ==  new IntDataBox(186)
+     * - DataBox.fromObject("186") == new StringDataBox("186")
+     * - DataBox.fromObject(new ArrayList<>()) // Error! ArrayList isn't a
+     *                                         // primitive we support
+     */
+    public static DataBox fromObject(Object o) {
+        if (o instanceof DataBox) return (DataBox) o;
+        if (o instanceof Integer) return new IntDataBox((Integer) o);
+        if (o instanceof String) return new StringDataBox((String) o);
+        if (o instanceof Boolean) return new BoolDataBox((Boolean) o);
+        if (o instanceof Long) return new LongDataBox((Long) o);
+        if (o instanceof Float) return new FloatDataBox((Float) o);
+        if (o instanceof Double) {
+            // implicit cast
+            double d = (Double) o;
+            return new FloatDataBox((float) d);
+        }
+        if (o instanceof byte[]) return new ByteArrayDataBox((byte[]) o, ((byte[]) o).length);
+        throw new IllegalArgumentException("Object was not a supported data type");
+    }
 }

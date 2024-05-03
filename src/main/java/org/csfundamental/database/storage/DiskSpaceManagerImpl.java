@@ -75,7 +75,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
 
         part.partLock.lock();
         try{
-            part.open((Paths.get(dir, String.valueOf(partNum))).toString());
+            part.loadFromFile((Paths.get(dir, String.valueOf(partNum))).toString());
         }finally {
             part.partLock.unlock();
         }
@@ -87,15 +87,15 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
         managerLock.lock();
         try{
             part = getPartitionByPartNum(partNum);
-            partMap.remove(part.partNum);
+            partMap.remove(part.getPartNum());
         }finally {
             managerLock.unlock();
         }
 
         part.partLock.lock();
         try{
-            part.freeDataPages();
-            part.init();
+            part.freeAllPages();
+            part.reset();
             part.close();
 
             File pf = new File(dir + "/" + partNum);
@@ -131,7 +131,7 @@ public class DiskSpaceManagerImpl implements DiskSpaceManager {
             int pageNum = part.allocPage();
             return DiskSpaceManager.getVirtualPageNum(partNum, pageNum);
         }catch (IOException e){
-            throw new PageException("Allocate a new page failed at partition " + part.partNum + ". " + e.getMessage());
+            throw new PageException("Allocate a new page failed at partition " + part.getPartNum() + ". " + e.getMessage());
         }
         finally {
             part.partLock.unlock();

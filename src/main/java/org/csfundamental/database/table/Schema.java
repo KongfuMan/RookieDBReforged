@@ -1,6 +1,7 @@
 package org.csfundamental.database.table;
 
 import org.csfundamental.database.common.Buffer;
+import org.csfundamental.database.table.databox.DataBox;
 import org.csfundamental.database.table.databox.Type;
 
 import java.nio.ByteBuffer;
@@ -94,5 +95,45 @@ public class Schema {
     @Override
     public int hashCode() {
         return Objects.hash(fieldNames, fieldTypes);
+    }
+
+    public List<String> getFieldNames() {
+        return null;
+    }
+
+    public void verify(Record r) {
+        if (this.size() != r.size()){
+            throw new RuntimeException("");
+        }
+
+        for(int i = 0; i < this.size(); i++){
+            Type fieldType = this.getFieldType(i);
+            DataBox dataBox = r.getValue(i);
+            if (fieldType != dataBox.type()){
+                throw new RuntimeException("Data type does not match.");
+            }
+        }
+    }
+
+    public int size(){
+        return this.fieldNames.size();
+    }
+
+    public String getFieldName(int index) {
+        return this.fieldNames.get(index);
+    }
+
+    public Type getFieldType(int index) {
+        return this.fieldTypes.get(index);
+    }
+
+    public Integer findField(String fieldName) {
+        for (int i = 0; i < size(); i++){
+            if (this.getFieldName(i).equals(fieldName)){
+                return i;
+            }
+        }
+
+        throw new RuntimeException("No column " + fieldName + " found in " + toString());
     }
 }

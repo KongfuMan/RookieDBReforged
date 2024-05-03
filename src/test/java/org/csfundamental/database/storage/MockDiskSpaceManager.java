@@ -1,15 +1,12 @@
 package org.csfundamental.database.storage;
 
-import org.csfundamental.database.storage.DiskSpaceManager;
-import org.csfundamental.database.storage.PageException;
-
 import java.util.*;
 
 /**
  * "Disk" space manager that really just keeps things in memory. Not thread safe.
  * For test purpose
  */
-public class MemoryDiskSpaceManager implements DiskSpaceManager {
+public class MockDiskSpaceManager implements DiskSpaceManager {
     private Map<Integer, Set<Integer>> partitions = new HashMap<>();
     private Map<Integer, Integer> nextPageNum = new HashMap<>();
     private Map<Long, byte[]> pages = new HashMap<>();

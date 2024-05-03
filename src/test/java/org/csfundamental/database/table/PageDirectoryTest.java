@@ -4,7 +4,7 @@ import org.csfundamental.database.buffer.BufferManager;
 import org.csfundamental.database.buffer.Page;
 import org.csfundamental.database.common.Buffer;
 import org.csfundamental.database.storage.DiskSpaceManager;
-import org.csfundamental.database.storage.MemoryDiskSpaceManager;
+import org.csfundamental.database.storage.MockDiskSpaceManager;
 import org.csfundamental.database.storage.PageException;
 import org.junit.Assert;
 import org.junit.Before;
@@ -27,7 +27,7 @@ public class PageDirectoryTest {
 
     @Before
     public void beforeEach() {
-        this.diskSpaceManager = new MemoryDiskSpaceManager();
+        this.diskSpaceManager = new MockDiskSpaceManager();
         this.partNum = this.diskSpaceManager.allocPart();
         this.firstHeaderPageNum = this.diskSpaceManager.allocPage(this.partNum);
         this.bufferManager = new BufferManager(this.diskSpaceManager, 1024);

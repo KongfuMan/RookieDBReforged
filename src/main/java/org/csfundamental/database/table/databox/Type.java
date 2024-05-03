@@ -34,6 +34,43 @@ public class Type{
         return new Type(TypeId.BYTE_ARRAY, len);
     }
 
+    public static Type fromStringLiteral(String fieldTypeStr, String length){
+        Type fieldType;
+        switch(fieldTypeStr.toLowerCase()) {
+            case "int":;
+            case "integer":
+                fieldType = Type.fromInt();
+                break;
+            case "char":;
+            case "varchar":;
+            case "string":
+                if(length == null) {
+                    throw new RuntimeException("Missing length for String type.");
+                }
+                if (length.indexOf('.') >= 0) {
+                    throw new RuntimeException(String.format("Length of String type is expected to be integer, but actually `%s`.", length));
+                }
+                fieldType = Type.fromString(Integer.parseInt(length));
+                break;
+            case "float":
+                fieldType = Type.fromFloat();
+                break;
+            case "long":
+                fieldType = Type.fromLong();
+                break;
+            case "bool":;
+            case "boolean":
+                fieldType = Type.fromBool();
+                break;
+            default:
+                throw new RuntimeException(String.format(
+                        "Invalid field type \"%s\"",
+                        fieldTypeStr
+                ));
+        }
+        return fieldType;
+    }
+
     private Type(int typeId, int sizeInBytes){
         this(TypeId.fromInt(typeId), sizeInBytes);
     }

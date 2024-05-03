@@ -2,7 +2,7 @@ package org.csfundamental.database.buffer;
 
 import org.csfundamental.database.common.Buffer;
 import org.csfundamental.database.storage.DiskSpaceManager;
-import org.csfundamental.database.storage.MemoryDiskSpaceManager;
+import org.csfundamental.database.storage.MockDiskSpaceManager;
 import org.csfundamental.database.storage.PageException;
 import org.junit.After;
 import org.junit.Assert;
@@ -28,7 +28,7 @@ public class BufferManagerTest {
 
     @Before
     public void beforeEach() {
-        diskSpaceManager = new MemoryDiskSpaceManager();
+        diskSpaceManager = new MockDiskSpaceManager();
         bufferManager = new BufferManager(diskSpaceManager, 5);
     }
 

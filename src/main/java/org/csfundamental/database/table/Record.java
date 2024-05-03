@@ -26,11 +26,11 @@ public class Record {
     }
 
     public static Record fromBytes(Buffer buf, Schema schema){
-        List<DataBox> databoxes = new ArrayList<>();
+        List<DataBox> dataBoxes = new ArrayList<>();
         for (Type fieldType : schema.getFieldTypes()) {
-            databoxes.add(DataBox.fromBytes(buf, fieldType));
+            dataBoxes.add(DataBox.fromBytes(buf, fieldType));
         }
-        return new Record(databoxes);
+        return new Record(dataBoxes);
     }
 
     public byte[] toBytes(Schema schema){
@@ -57,5 +57,9 @@ public class Record {
     @Override
     public int hashCode() {
         return dataBoxes.hashCode();
+    }
+
+    public DataBox getValue(int index) {
+        return dataBoxes.get(index);
     }
 }

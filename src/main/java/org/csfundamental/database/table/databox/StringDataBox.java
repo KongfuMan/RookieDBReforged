@@ -19,6 +19,10 @@ public class StringDataBox extends DataBox {
         this.value = value.replaceAll("\0*$", ""); // Trim off null bytes
     }
 
+    public StringDataBox(String str) {
+        this(str, str.length());
+    }
+
     @Override
     public Type type() {
         return Type.fromString(size);
